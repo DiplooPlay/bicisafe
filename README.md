@@ -160,8 +160,10 @@ npm install
 npm run dev
 ```
 
-> En Windows también puedes usar **Git Bash** o **WSL** y seguir los comandos de Linux.
-> El archivo `docker-compose.yml` funciona igual con **Docker Desktop**.
+> **Tips para Windows**:
+> 1. Asegúrate de tener la variable de entorno `JAVA_HOME` configurada hacia tu instalación de **JDK 21** y que `java -version` responda correctamente.
+> 2. Si usas **Docker Desktop**, solo ejecuta `docker compose up -d` en la raíz. Las credenciales por defecto (`user`/`1234`) coinciden exactamente con la configuración de desarrollo, por lo que el backend conectará de inmediato sin necesidad de configurar variables de entorno.
+> 3. También puedes usar **Git Bash** o **WSL** y seguir los comandos de Linux.
 
 ### Variables de entorno
 

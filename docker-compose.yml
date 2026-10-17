@@ -5,14 +5,14 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: bicisafe
-      POSTGRES_USER: bicisafe
-      POSTGRES_PASSWORD: bicisafe
+      POSTGRES_USER: ${DB_USERNAME:-user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-1234}
     ports:
       - "5432:5432"
     volumes:
       - bicisafe-pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bicisafe -d bicisafe"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-user} -d bicisafe"]
       interval: 10s
       timeout: 5s
       retries: 5
