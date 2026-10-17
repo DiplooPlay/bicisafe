@@ -240,6 +240,21 @@ export const MapaInteractivo: React.FC<MapaInteractivoProps> = ({
           </button>
         </div>
 
+        {/* Toggle Modo Ciclovías (CyclOSM) / Mapa Estándar */}
+        <button
+          onClick={() => setMapMode((prev) => (prev === 'cyclosm' ? 'estandar' : 'cyclosm'))}
+          title={mapMode === 'cyclosm' ? 'Cambiar a Mapa Estándar' : 'Activar Mapa Ciclovías (CyclOSM)'}
+          className={`w-11 h-11 backdrop-blur-md rounded-2xl shadow-md border border-outline-variant/30 flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+            mapMode === 'cyclosm'
+              ? 'bg-primary text-on-primary'
+              : 'bg-surface-container-lowest/95 text-on-surface hover:bg-surface-container'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[22px]">
+            {mapMode === 'cyclosm' ? 'directions_bike' : 'map'}
+          </span>
+        </button>
+
         {onRecenterGPS && (
           <button
             onClick={onRecenterGPS}
@@ -251,20 +266,33 @@ export const MapaInteractivo: React.FC<MapaInteractivoProps> = ({
         )}
       </div>
 
-      {/* Map Container */}
+      {/* Map Container con restricción a Lima y Villa El Salvador */}
       <MapContainer
         center={defaultCenter}
         zoom={13}
+        minZoom={11}
+        maxBounds={LIMITES_LIMA_VES}
+        maxBoundsViscosity={0.9}
         scrollWheelZoom={true}
         zoomControl={false}
         ref={setMapInstance}
         className="w-full h-full"
       >
-        {/* OpenStreetMap estándar gratuito */}
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        {mapMode === 'cyclosm' ? (
+          <TileLayer
+            key="cyclosm"
+            attribution='&copy; <a href="https://www.cyclosm.org">CyclOSM</a> | &copy; OpenStreetMap'
+            url="https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png"
+            maxZoom={18}
+          />
+        ) : (
+          <TileLayer
+            key="osm"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maxZoom={19}
+          />
+        )}
 
         <RecenterController coords={userCoords} />
         <MapClickHandler onPick={onSelectMapLocation} active={isPickingLocation} />
@@ -283,33 +311,53 @@ export const MapaInteractivo: React.FC<MapaInteractivoProps> = ({
           </Marker>
         )}
 
-        {/* Cycleways: Segregated and Shared 30 */}
+        {/* Cycleways: Segregated and Shared 30 (geometría real por calzada) */}
         {cycleways.map((cw) => {
           if (cw.type === 'segregada' && !showSegregated) return null;
           if (cw.type === 'vias30' && !showVias30) return null;
 
           const isSegregated = cw.type === 'segregada';
           return (
-            <Polyline
-              key={cw.id}
-              positions={cw.coordinates}
-              pathOptions={{
-                color: isSegregated ? '#006948' : '#006398',
-                weight: isSegregated ? 5 : 4,
-                dashArray: isSegregated ? undefined : '6, 6',
-                opacity: 0.85
-              }}
-            >
-              <Popup>
-                <div className="p-1 font-sans">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 block">
-                    {isSegregated ? 'Ciclovía Segregada' : 'Vía Compartida 30'}
-                  </span>
-                  <p className="font-bold text-xs text-slate-800">{cw.name}</p>
-                  <p className="text-[11px] text-slate-500">{cw.surface}</p>
-                </div>
-              </Popup>
-            </Polyline>
+            <React.Fragment key={cw.id}>
+              {/* Contorno de resplandor para contraste y visibilidad */}
+              <Polyline
+                positions={cw.coordinates}
+                pathOptions={{
+                  color: isSegregated ? '#064e3b' : '#075985',
+                  weight: isSegregated ? 7 : 5.5,
+                  opacity: 0.35
+                }}
+              />
+              {/* Línea principal vibrante alineada a la pista */}
+              <Polyline
+                positions={cw.coordinates}
+                pathOptions={{
+                  color: isSegregated ? '#059669' : '#0284c7',
+                  weight: isSegregated ? 4.5 : 3.5,
+                  dashArray: isSegregated ? undefined : '6, 6',
+                  opacity: 0.95
+                }}
+              >
+                <Popup>
+                  <div className="p-1.5 font-sans min-w-[190px]">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[13px]">
+                        {isSegregated ? 'directions_bike' : 'share'}
+                      </span>
+                      <span>{isSegregated ? 'Ciclovía Segregada' : 'Vía Compartida 30'}</span>
+                    </span>
+                    <p className="font-bold text-xs text-slate-800 mt-0.5">{cw.name}</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">{cw.surface}</p>
+                    <div className="mt-1.5 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600 font-medium">
+                      <span>Longitud: <b>{cw.distanceKm} km</b></span>
+                      <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-bold">
+                        Seguridad {cw.safetyScore}%
+                      </span>
+                    </div>
+                  </div>
+                </Popup>
+              </Polyline>
+            </React.Fragment>
           );
         })}
 
