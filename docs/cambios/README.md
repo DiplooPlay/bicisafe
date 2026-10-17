@@ -58,4 +58,6 @@ permanece en `docs/historias-pendientes/` hasta que todo quede resuelto.
 | 018 | [018-seguridad-incidentes-y-sesion-frontend.md](018-seguridad-incidentes-y-sesion-frontend.md) | Correcciones al cierre del 017: escritura de incidentes solo con JWT (GET público), jti único contra colisión de lista negra del logout, y fusión de la sesión E1 en `App.tsx`; verificado con curl, `mvn test`, `npm build` y Vitest. |
 | 019 | [019-fix-cors-rutas-verificacion-y-guia-despliegue.md](019-fix-cors-rutas-verificacion-y-guia-despliegue.md) | Fix CORS puerto 3000, debounce y auto-resolución en Planificador, mensaje guiado por vía inaccesible en OrsAdapter, corrección de FRONTEND_URL en emails y guía de despliegue a producción. |
 | 020 | [020-resaltado-ciclovias-cyclosm-y-geometria-real.md](020-resaltado-ciclovias-cyclosm-y-geometria-real.md) | Resaltado realista de ciclovías por calzada (sin cortar manzanas), capa base CyclOSM con toggle y delimitación geográfica a Lima Metropolitana y Villa El Salvador. |
+| 021 | [021-filtro-ruta-y-resaltado-alto-contraste.md](021-filtro-ruta-y-resaltado-alto-contraste.md) | Filtro de Ruta planificada en barra superior, trazo naranja deportivo de alto contraste con halo blanco, marcadores de origen/meta y centrado automático `fitBounds`. |
+
 

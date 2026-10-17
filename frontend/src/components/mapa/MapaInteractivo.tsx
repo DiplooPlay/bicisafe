@@ -99,6 +99,33 @@ function MapClickHandler({ onPick, active }: { onPick?: (lat: number, lng: numbe
   return null;
 }
 
+const createRouteEndpointIcon = (tipo: 'origen' | 'destino') =>
+  L.divIcon({
+    className: 'custom-pin',
+    html: `
+      <div class="relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2">
+        <div class="flex items-center gap-1 bg-white text-slate-800 px-2 py-0.5 rounded-full shadow-lg border border-slate-200">
+          <div class="w-4 h-4 rounded-full ${tipo === 'origen' ? 'bg-emerald-600' : 'bg-orange-600'} text-white flex items-center justify-center">
+            <span class="material-symbols-outlined text-[11px] leading-none">${tipo === 'origen' ? 'trip_origin' : 'flag'}</span>
+          </div>
+          <span class="font-sans text-[10px] font-bold uppercase tracking-wider">${tipo === 'origen' ? 'Origen' : 'Meta'}</span>
+        </div>
+      </div>
+    `,
+    iconSize: [60, 24],
+    iconAnchor: [30, 12]
+  });
+
+function RouteFitController({ route }: { route: RutaPlanificada | null }) {
+  const map = useMap();
+  React.useEffect(() => {
+    if (route && route.puntos && route.puntos.length > 0) {
+      map.fitBounds(route.puntos, { padding: [70, 70], maxZoom: 16 });
+    }
+  }, [route, map]);
+  return null;
+}
+
 // Límites geográficos: Lima Metropolitana y Villa El Salvador (evita desplazarse a zonas externas)
 const LIMITES_LIMA_VES: L.LatLngBoundsLiteral = [
   [-12.38, -77.25], // Suroeste: Villa El Salvador / Lurín / Litoral Pacífico
@@ -126,13 +153,14 @@ export const MapaInteractivo: React.FC<MapaInteractivoProps> = ({
 
   // Filter logic
   const filteredIncidents = incidents.filter(inc => {
-    if (filterCategory === 'todo') return true;
+    if (filterCategory === 'todo' || filterCategory === 'ruta') return true;
     if (filterCategory === 'alertas') return inc.status !== 'RESOLVED';
     return inc.category === filterCategory;
   });
 
   const showSegregated = filterCategory === 'todo' || filterCategory === 'segregadas';
   const showVias30 = filterCategory === 'todo' || filterCategory === 'vias30';
+  const showRoute = Boolean(plannedRoute && (filterCategory === 'todo' || filterCategory === 'ruta'));
 
   const defaultCenter: [number, number] = [-12.1217, -77.0298]; // Lima - Miraflores
 
@@ -174,6 +202,21 @@ export const MapaInteractivo: React.FC<MapaInteractivoProps> = ({
         >
           <span>Todo</span>
         </button>
+
+        {/* Chip Filtro de Ruta Planificada */}
+        {plannedRoute && (
+          <button
+            onClick={() => setFilterCategory('ruta')}
+            className={`shrink-0 h-8 px-3.5 rounded-full font-label-md text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer ${
+              filterCategory === 'ruta'
+                ? 'bg-orange-600 text-white font-bold ring-2 ring-orange-300'
+                : 'bg-surface-container-lowest/95 backdrop-blur-md text-orange-600 hover:bg-orange-50 border border-orange-200'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+            <span>Ruta ({plannedRoute.distanciaKm} km)</span>
+          </button>
+        )}
 
         <button
           onClick={() => setFilterCategory('segregadas')}
@@ -361,16 +404,58 @@ export const MapaInteractivo: React.FC<MapaInteractivoProps> = ({
           );
         })}
 
-        {/* Planned Route (if any) */}
-        {plannedRoute && (
-          <Polyline
-            positions={plannedRoute.puntos}
-            pathOptions={{
-              color: '#0284c7',
-              weight: 6,
-              opacity: 0.95
-            }}
-          />
+        {/* Planned Route (if any) with high-contrast dual stroke and origin/meta pins */}
+        {showRoute && plannedRoute && (
+          <>
+            <RouteFitController route={plannedRoute} />
+            {/* Halo de contraste blanco para destacar sobre cualquier mapa */}
+            <Polyline
+              positions={plannedRoute.puntos}
+              pathOptions={{
+                color: '#ffffff',
+                weight: 9,
+                opacity: 0.95
+              }}
+            />
+            {/* Trazo activo Naranja Deportivo de alta visibilidad */}
+            <Polyline
+              positions={plannedRoute.puntos}
+              pathOptions={{
+                color: '#ea580c',
+                weight: 5.5,
+                opacity: 1.0,
+                lineCap: 'round',
+                lineJoin: 'round'
+              }}
+            >
+              <Popup>
+                <div className="p-1 font-sans">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-orange-600 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">alt_route</span>
+                    <span>Tu Ruta Planificada</span>
+                  </span>
+                  <div className="mt-1 flex items-center gap-3 text-xs font-semibold text-slate-800">
+                    <span>🚴 {plannedRoute.distanciaKm} km</span>
+                    <span>⏱ ~{plannedRoute.duracionMin} min</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Perfil ciclista seguro</p>
+                </div>
+              </Popup>
+            </Polyline>
+            {/* Marcadores de inicio y llegada */}
+            {plannedRoute.puntos.length > 0 && (
+              <>
+                <Marker
+                  position={plannedRoute.puntos[0]}
+                  icon={createRouteEndpointIcon('origen')}
+                />
+                <Marker
+                  position={plannedRoute.puntos[plannedRoute.puntos.length - 1]}
+                  icon={createRouteEndpointIcon('destino')}
+                />
+              </>
+            )}
+          </>
         )}
 
         {/* Incident Pins */}
