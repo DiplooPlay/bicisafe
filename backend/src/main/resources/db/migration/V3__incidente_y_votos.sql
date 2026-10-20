@@ -20,7 +20,7 @@ CREATE TABLE incidente (
     fecha_creacion   TIMESTAMPTZ      NOT NULL,
     fecha_expiracion TIMESTAMPTZ      NOT NULL
 );
-
+23
 CREATE INDEX idx_incidente_geom ON incidente USING GIST(geom);
 CREATE INDEX idx_incidente_estado ON incidente(estado);
 
