@@ -8,6 +8,7 @@ interface MapaInteractivoProps {
   incidents: Incident[];
   cycleways: CycleWay[];
   plannedRoute: RutaPlanificada | null;
+  routeIncidents?: Incident[] | null;
   routingError: string | null;
   userCoords: [number, number] | null;
   accuracy?: number | null;
@@ -136,6 +137,7 @@ export const MapaInteractivo: React.FC<MapaInteractivoProps> = ({
   incidents,
   cycleways,
   plannedRoute,
+  routeIncidents,
   routingError,
   userCoords,
   accuracy,
@@ -151,11 +153,23 @@ export const MapaInteractivo: React.FC<MapaInteractivoProps> = ({
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
   const [mapMode, setMapMode] = useState<'cyclosm' | 'estandar'>('cyclosm');
 
-  // Filter logic
+  // Filter logic (HU-09, HU-15)
   const filteredIncidents = incidents.filter(inc => {
-    if (filterCategory === 'todo' || filterCategory === 'ruta') return true;
-    if (filterCategory === 'alertas') return inc.status !== 'RESOLVED';
-    return inc.category === filterCategory;
+    if (filterCategory === 'ruta') {
+      if (inc.status === 'EXPIRED') return false;
+      if (routeIncidents) {
+        return routeIncidents.some(r => r.id === inc.id);
+      }
+      if (plannedRoute && plannedRoute.puntos.length > 0) {
+        return plannedRoute.puntos.some(([lat, lng]) => {
+          return Math.abs(lat - inc.lat) < 0.0015 && Math.abs(lng - inc.lng) < 0.0015;
+        });
+      }
+      return false;
+    }
+    if (filterCategory === 'todo') return inc.status !== 'EXPIRED';
+    if (filterCategory === 'alertas') return inc.status !== 'RESOLVED' && inc.status !== 'EXPIRED';
+    return inc.category === filterCategory && inc.status !== 'EXPIRED';
   });
 
   const showSegregated = filterCategory === 'todo' || filterCategory === 'segregadas';
@@ -214,7 +228,10 @@ export const MapaInteractivo: React.FC<MapaInteractivoProps> = ({
             }`}
           >
             <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
-            <span>Ruta ({plannedRoute.distanciaKm} km)</span>
+            <span>
+              Ruta ({plannedRoute.distanciaKm} km
+              {routeIncidents && routeIncidents.length > 0 ? ` · ${routeIncidents.length} alert${routeIncidents.length === 1 ? 'a' : 'as'}` : ''})
+            </span>
           </button>
         )}
 
@@ -392,10 +409,22 @@ export const MapaInteractivo: React.FC<MapaInteractivoProps> = ({
                     <p className="font-bold text-xs text-slate-800 mt-0.5">{cw.name}</p>
                     <p className="text-[11px] text-slate-500 mt-0.5">{cw.surface}</p>
                     <div className="mt-1.5 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600 font-medium">
-                      <span>Longitud: <b>{cw.distanceKm} km</b></span>
-                      <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-bold">
-                        Seguridad {cw.safetyScore}%
-                      </span>
+                      <span><b>{cw.distanceKm} km</b></span>
+                      {(() => {
+                        const alertasCercanas = incidents.filter(inc =>
+                          inc.status !== 'RESOLVED' && inc.status !== 'EXPIRED' &&
+                          cw.coordinates.some(([lat, lng]) => Math.abs(lat - inc.lat) < 0.0015 && Math.abs(lng - inc.lng) < 0.0015)
+                        ).length;
+                        return alertasCercanas === 0 ? (
+                          <span className="text-primary bg-primary/10 px-2 py-0.5 rounded font-semibold text-[10px]">
+                            Sin alertas
+                          </span>
+                        ) : (
+                          <span className="text-error bg-error-container text-on-error-container px-2 py-0.5 rounded font-semibold text-[10px]">
+                            {alertasCercanas} alerta{alertasCercanas > 1 ? 's' : ''}
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
                 </Popup>
