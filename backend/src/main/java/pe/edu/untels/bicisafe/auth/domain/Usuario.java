@@ -49,6 +49,9 @@ public class Usuario {
     private RolUsuario rol = RolUsuario.CICLISTA;
 
     @Column(nullable = false)
+    private int reputacion = 15;
+
+    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     @Setter(AccessLevel.NONE)
     private EstadoUsuario estado;
@@ -84,6 +87,14 @@ public class Usuario {
 
     public boolean estaActivo() {
         return estado == EstadoUsuario.ACTIVO;
+    }
+
+    public void actualizarPassword(String nuevoHash) {
+        this.hashPassword = nuevoHash;
+    }
+
+    public void sumarReputacion(int puntos) {
+        this.reputacion = Math.max(0, Math.min(100, this.reputacion + puntos));
     }
 
     @PrePersist
