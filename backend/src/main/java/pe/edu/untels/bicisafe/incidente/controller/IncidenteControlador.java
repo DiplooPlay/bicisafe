@@ -86,16 +86,22 @@ public class IncidenteControlador {
      * Confirms an incident report (+1 community consensus vote).
      */
     @PostMapping("/{id}/confirmar")
-    public IncidenteResponse confirmar(@PathVariable UUID id) {
-        return IncidenteResponse.desde(incidenteService.confirmarIncidente(id));
+    public IncidenteResponse confirmar(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UsuarioAutenticado usuarioAutenticado) {
+        UUID usuarioId = usuarioAutenticado != null ? usuarioAutenticado.id() : null;
+        return IncidenteResponse.desde(incidenteService.confirmarIncidente(id, usuarioId));
     }
 
     /**
      * Marks an incident as resolved/cleared so it is removed from the active map.
      */
     @PostMapping("/{id}/resolver")
-    public IncidenteResponse resolver(@PathVariable UUID id) {
-        return IncidenteResponse.desde(incidenteService.resolverIncidente(id));
+    public IncidenteResponse resolver(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UsuarioAutenticado usuarioAutenticado) {
+        UUID usuarioId = usuarioAutenticado != null ? usuarioAutenticado.id() : null;
+        return IncidenteResponse.desde(incidenteService.resolverIncidente(id, usuarioId));
     }
 
     /**

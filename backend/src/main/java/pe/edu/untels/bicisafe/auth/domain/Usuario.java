@@ -94,7 +94,7 @@ public class Usuario {
     }
 
     public void sumarReputacion(int puntos) {
-        this.reputacion = Math.max(0, Math.min(100, this.reputacion + puntos));
+        this.reputacion = Math.max(0, Math.min(20, this.reputacion + puntos));
     }
 
     @PrePersist
