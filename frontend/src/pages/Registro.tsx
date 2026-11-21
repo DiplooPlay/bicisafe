@@ -111,31 +111,18 @@ export const Registro: React.FC<RegistroProps> = ({ onSuccess, onNavigateToLogin
   return (
     <div className="w-full min-h-screen bg-background flex flex-col justify-between antialiased">
       <header className="fixed top-0 left-0 right-0 z-50 bg-surface/85 backdrop-blur-md shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
-        <div className="h-16 max-w-[1200px] mx-auto px-margin-mobile lg:px-margin flex items-center justify-between gap-space-md">
+        <div className="h-16 max-w-[1200px] mx-auto px-margin-mobile lg:px-margin flex items-center justify-between">
           <img src="/logo.svg" alt="BiciSafe Logo" className="h-8 object-contain" />
-          <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 bg-surface-container rounded-full text-primary font-label-sm">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-            Red Activa 24/7
-          </span>
         </div>
       </header>
 
       <main className="w-full flex-1 pt-24 pb-12 flex items-start md:items-center justify-center">
         <div className="w-full max-w-md bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 p-6 sm:p-8">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary">
-              <span className="material-symbols-outlined text-[16px]">person_add</span>
-            </span>
-            <span className="font-label-sm uppercase tracking-wider text-primary font-semibold">
-              Acceso Seguro
-            </span>
-          </div>
-
-          <h1 className="font-headline-lg text-2xl sm:text-3xl text-on-surface font-bold tracking-tight mb-2">
-            Crear Cuenta
+          <h1 className="font-headline-lg text-2xl text-on-surface font-bold tracking-tight mb-1">
+            Crear cuenta
           </h1>
-          <p className="font-body-md text-sm text-on-surface-variant mb-6">
-            Regístrate con tu correo para reportar y validar incidentes en tu ruta.
+          <p className="font-body-md text-xs sm:text-sm text-on-surface-variant mb-6">
+            Regístrate para reportar
           </p>
 
           <form className="space-y-4" onSubmit={handleSubmit} noValidate>
@@ -162,7 +149,7 @@ export const Registro: React.FC<RegistroProps> = ({ onSuccess, onNavigateToLogin
 
             <div>
               <label className="block font-label-md text-xs sm:text-sm text-on-surface font-semibold mb-1.5" htmlFor="registro-correo">
-                Correo Electrónico
+                Correo
               </label>
               <div className="relative flex items-center">
                 <span className="material-symbols-outlined absolute left-3.5 text-outline pointer-events-none text-[20px]">

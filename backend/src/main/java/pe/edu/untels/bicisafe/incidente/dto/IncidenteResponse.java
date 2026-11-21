@@ -24,11 +24,15 @@ public record IncidenteResponse(
         int votosConfirmar,
         int votosRechazar,
         int votosRequeridos,
+        int denunciasFalso,
+        int denunciasDuplicado,
         long minutosRestantes,
         Instant fechaCreacion
 ) {
     public static IncidenteResponse desde(Incidente entidad) {
-        long minutos = Math.max(0, Duration.between(Instant.now(), entidad.getFechaExpiracion()).toMinutes());
+        long minutos = entidad.getFechaExpiracion() != null
+                ? Math.max(0, Duration.between(Instant.now(), entidad.getFechaExpiracion()).toMinutes())
+                : 0;
         return new IncidenteResponse(
                 entidad.getId(),
                 entidad.getCategoria().name().toLowerCase(),
@@ -44,6 +48,8 @@ public record IncidenteResponse(
                 entidad.getVotosConfirmar(),
                 entidad.getVotosRechazar(),
                 entidad.getVotosRequeridos(),
+                entidad.getDenunciasFalso(),
+                entidad.getDenunciasDuplicado(),
                 minutos,
                 entidad.getFechaCreacion()
         );
