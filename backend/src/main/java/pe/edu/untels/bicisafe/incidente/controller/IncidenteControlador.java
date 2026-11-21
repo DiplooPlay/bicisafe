@@ -5,21 +5,25 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
+import pe.edu.untels.bicisafe.config.security.UsuarioAutenticado;
 import pe.edu.untels.bicisafe.incidente.dto.IncidenteRequest;
 import pe.edu.untels.bicisafe.incidente.dto.IncidenteResponse;
+import pe.edu.untels.bicisafe.incidente.dto.SolicitudDenuncia;
 import pe.edu.untels.bicisafe.incidente.service.IncidenteService;
 
 /**
- * REST controller for reporting, viewing, and voting on road incidents.
+ * REST controller for reporting, viewing, voting, and moderating road incidents.
  */
 @RestController
 @RequestMapping("/api/incidentes")
@@ -52,15 +56,30 @@ public class IncidenteControlador {
     }
 
     /**
+     * Filter incidents near a given route geometry (HU-09).
+     */
+    @PostMapping("/en-ruta")
+    public List<IncidenteResponse> listarEnRuta(
+            @RequestBody List<double[]> puntos,
+            @RequestParam(defaultValue = "150.0") double radioMetros) {
+        return incidenteService.listarIncidentesCercanosARuta(puntos, radioMetros).stream()
+                .map(IncidenteResponse::desde)
+                .toList();
+    }
+
+    /**
      * Reports a new road incident.
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public IncidenteResponse reportar(
             @Valid @RequestBody IncidenteRequest solicitud,
+            @AuthenticationPrincipal UsuarioAutenticado usuarioAutenticado,
             Principal principal) {
-        String nombreAutor = (principal != null) ? principal.getName() : "Ciclista Urbano";
-        return IncidenteResponse.desde(incidenteService.reportarIncidente(solicitud, nombreAutor));
+        String nombreAutor = usuarioAutenticado != null ? usuarioAutenticado.correo()
+                : (principal != null ? principal.getName() : "Ciclista Urbano");
+        UUID usuarioId = usuarioAutenticado != null ? usuarioAutenticado.id() : null;
+        return IncidenteResponse.desde(incidenteService.reportarIncidente(solicitud, nombreAutor, usuarioId));
     }
 
     /**
@@ -77,5 +96,18 @@ public class IncidenteControlador {
     @PostMapping("/{id}/resolver")
     public IncidenteResponse resolver(@PathVariable UUID id) {
         return IncidenteResponse.desde(incidenteService.resolverIncidente(id));
+    }
+
+    /**
+     * Reports/flags an incident as inappropriate, fake or duplicate (HU-14).
+     */
+    @PostMapping("/{id}/denunciar")
+    public IncidenteResponse denunciar(
+            @PathVariable UUID id,
+            @Valid @RequestBody SolicitudDenuncia solicitud,
+            @AuthenticationPrincipal UsuarioAutenticado usuarioAutenticado) {
+        UUID usuarioId = usuarioAutenticado != null ? usuarioAutenticado.id() : null;
+        return IncidenteResponse.desde(incidenteService.denunciarIncidente(
+                id, usuarioId, solicitud.motivo(), solicitud.comentario()));
     }
 }

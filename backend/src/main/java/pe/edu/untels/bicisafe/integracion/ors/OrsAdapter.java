@@ -15,6 +15,7 @@ import tools.jackson.databind.JsonNode;
 
 import pe.edu.untels.bicisafe.compartido.excepcion.IntegracionExcepcion;
 import pe.edu.untels.bicisafe.ruta.domain.Punto;
+import pe.edu.untels.bicisafe.ruta.domain.PuntoElevacion;
 import pe.edu.untels.bicisafe.ruta.domain.Ruta;
 import pe.edu.untels.bicisafe.ruta.service.ProveedorRutas;
 
@@ -85,14 +86,15 @@ public class OrsAdapter implements ProveedorRutas {
         return mapearRespuesta(respuesta);
     }
 
-    private record CuerpoPeticion(List<double[]> coordinates) {
+    private record CuerpoPeticion(List<double[]> coordinates, boolean elevation) {
     }
 
     private CuerpoPeticion cuerpoPeticion(Punto origen, Punto destino) {
-        // ORS expects (lng, lat); the domain stores (lat, lng).
+        // ORS expects (lng, lat); the domain stores (lat, lng). Requests elevation (HU-08).
         return new CuerpoPeticion(List.of(
                 new double[] { origen.longitud(), origen.latitud() },
-                new double[] { destino.longitud(), destino.latitud() }));
+                new double[] { destino.longitud(), destino.latitud() }),
+                true);
     }
 
     private Ruta mapearRespuesta(JsonNode respuesta) {
@@ -104,16 +106,64 @@ public class OrsAdapter implements ProveedorRutas {
         JsonNode resumen = feature.path("properties").path("summary");
         double distanciaKm = resumen.path("distance").asDouble(0) / 1000.0;
         long duracionMin = Math.round(resumen.path("duration").asDouble(0) / 60.0);
+        double ascentSummary = resumen.path("ascent").asDouble(0);
+        double descentSummary = resumen.path("descent").asDouble(0);
 
         List<Punto> recorrido = new ArrayList<>();
         for (JsonNode coordenada : feature.path("geometry").path("coordinates")) {
-            recorrido.add(Punto.de(coordenada.get(1).asDouble(), coordenada.get(0).asDouble()));
+            double lng = coordenada.get(0).asDouble();
+            double lat = coordenada.get(1).asDouble();
+            Double alt = coordenada.size() > 2 ? coordenada.get(2).asDouble() : null;
+            recorrido.add(Punto.de(lat, lng, alt));
         }
 
         if (recorrido.isEmpty() || distanciaKm <= 0) {
             throw new IntegracionExcepcion(MENSAJE_NO_DISPONIBLE);
         }
-        return new Ruta(recorrido, distanciaKm, duracionMin);
+
+        List<PuntoElevacion> perfil = new ArrayList<>();
+        double acumuladaKm = 0.0;
+        double subida = 0.0;
+        double bajada = 0.0;
+
+        int pasoMuestreo = Math.max(1, recorrido.size() / 30);
+        for (int i = 0; i < recorrido.size(); i++) {
+            Punto p = recorrido.get(i);
+            if (i > 0) {
+                Punto prev = recorrido.get(i - 1);
+                double d = calcularDistanciaKm(prev.latitud(), prev.longitud(), p.latitud(), p.longitud());
+                acumuladaKm += d;
+                double elevActual = p.elevacion() != null ? p.elevacion() : 0.0;
+                double elevPrev = prev.elevacion() != null ? prev.elevacion() : 0.0;
+                double diff = elevActual - elevPrev;
+                if (diff > 0) {
+                    subida += diff;
+                } else {
+                    bajada += Math.abs(diff);
+                }
+            }
+            if (i == 0 || i == recorrido.size() - 1 || i % pasoMuestreo == 0) {
+                perfil.add(new PuntoElevacion(
+                        Math.round(acumuladaKm * 100.0) / 100.0,
+                        Math.round(p.elevacion() * 10.0) / 10.0));
+            }
+        }
+
+        double elevGanada = ascentSummary > 0 ? ascentSummary : subida;
+        double elevPerdida = descentSummary > 0 ? descentSummary : bajada;
+
+        return new Ruta(recorrido, distanciaKm, duracionMin, elevGanada, elevPerdida, perfil);
+    }
+
+    public static double calcularDistanciaKm(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 
     private boolean contieneCuotaAgotada(RestClientResponseException excepcion) {

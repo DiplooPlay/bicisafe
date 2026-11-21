@@ -39,13 +39,44 @@ public class CorreoVerificacionAdapter implements ServicioCorreo {
         mensaje.setTo(destinatario);
         mensaje.setSubject("BiciSafe: confirma tu cuenta");
         mensaje.setText(cuerpo(nombreCiclista, enlaceVerificacion));
+        enviarMensaje(destinatario, mensaje, "verificación");
+    }
+
+    @Override
+    @Async
+    public void enviarCorreoRecuperacion(String destinatario, String nombreCiclista, String enlaceRecuperacion) {
+        SimpleMailMessage mensaje = new SimpleMailMessage();
+        mensaje.setFrom(autor);
+        mensaje.setTo(destinatario);
+        mensaje.setSubject("BiciSafe: restablece tu contraseña");
+        mensaje.setText(cuerpoRecuperacion(nombreCiclista, enlaceRecuperacion));
+        enviarMensaje(destinatario, mensaje, "recuperación de contraseña");
+    }
+
+    @Override
+    @Async
+    public void enviarAlertaIncidenteEnRuta(
+            String destinatario,
+            String nombreCiclista,
+            String nombreRuta,
+            String categoriaIncidente,
+            String ubicacion) {
+        SimpleMailMessage mensaje = new SimpleMailMessage();
+        mensaje.setFrom(autor);
+        mensaje.setTo(destinatario);
+        mensaje.setSubject("BiciSafe: incidente en tu ruta " + nombreRuta);
+        mensaje.setText(cuerpoAlerta(nombreCiclista, nombreRuta, categoriaIncidente, ubicacion));
+        enviarMensaje(destinatario, mensaje, "alerta de ruta");
+    }
+
+    private void enviarMensaje(String destinatario, SimpleMailMessage mensaje, String tipo) {
         try {
             remitenteJava.send(mensaje);
-            LOGGER.info("Correo de verificación enviado a {}", destinatario);
+            LOGGER.info("Correo de {} enviado a {}", tipo, destinatario);
         } catch (MailException excepcion) {
             LOGGER.error(
-                    "No se pudo enviar el correo de verificación a {}: {}",
-                    destinatario, excepcion.getMessage());
+                    "No se pudo enviar el correo de {} a {}: {}",
+                    tipo, destinatario, excepcion.getMessage());
         }
     }
 
@@ -55,6 +86,23 @@ public class CorreoVerificacionAdapter implements ServicioCorreo {
                 + "ingresando al siguiente enlace (válido por 24 horas):\n\n"
                 + enlaceVerificacion + "\n\n"
                 + "Si no creaste esta cuenta, ignora este mensaje.\n\n"
+                + "El equipo de BiciSafe";
+    }
+
+    private String cuerpoRecuperacion(String nombreCiclista, String enlaceRecuperacion) {
+        return "Hola, " + nombreCiclista + ",\n\n"
+                + "Recibimos una solicitud para restablecer la contraseña de tu cuenta en BiciSafe.\n"
+                + "Ingresa al siguiente enlace para definir una nueva contraseña (válido por 15 minutos):\n\n"
+                + enlaceRecuperacion + "\n\n"
+                + "Si no solicitaste este cambio, puedes ignorar este mensaje de forma segura.\n\n"
+                + "El equipo de BiciSafe";
+    }
+
+    private String cuerpoAlerta(String nombreCiclista, String nombreRuta, String categoria, String ubicacion) {
+        return "Hola, " + nombreCiclista + ",\n\n"
+                + "Se confirmó un incidente de tipo " + categoria + " cerca de tu ruta guardada \"" + nombreRuta + "\".\n"
+                + "Ubicación: " + ubicacion + "\n\n"
+                + "Te sugerimos tomar precauciones o elegir un desvío.\n\n"
                 + "El equipo de BiciSafe";
     }
 }

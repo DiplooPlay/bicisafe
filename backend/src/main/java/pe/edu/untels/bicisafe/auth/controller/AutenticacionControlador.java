@@ -13,7 +13,9 @@ import jakarta.validation.Valid;
 import pe.edu.untels.bicisafe.auth.dto.RespuestaAutenticacion;
 import pe.edu.untels.bicisafe.auth.dto.RespuestaMensaje;
 import pe.edu.untels.bicisafe.auth.dto.SolicitudLogin;
+import pe.edu.untels.bicisafe.auth.dto.SolicitudRecuperarPassword;
 import pe.edu.untels.bicisafe.auth.dto.SolicitudRegistro;
+import pe.edu.untels.bicisafe.auth.dto.SolicitudRestablecerPassword;
 import pe.edu.untels.bicisafe.auth.service.ServicioAutenticacion;
 import pe.edu.untels.bicisafe.auth.service.ServicioRegistro;
 
@@ -55,5 +57,20 @@ public class AutenticacionControlador {
             servicioAutenticacion.cerrarSesion(authorizationHeader.substring(7));
         }
         return ResponseEntity.ok(new RespuestaMensaje("Sesión finalizada exitosamente."));
+    }
+
+    @PostMapping("/recuperar-password")
+    public ResponseEntity<RespuestaMensaje> solicitarRecuperacionPassword(
+            @Valid @RequestBody SolicitudRecuperarPassword solicitud) {
+        servicioAutenticacion.solicitarRecuperacionPassword(solicitud);
+        return ResponseEntity.ok(new RespuestaMensaje(
+                "Si el correo está registrado, recibirás un enlace de recuperación válido por 15 minutos."));
+    }
+
+    @PostMapping("/restablecer-password")
+    public ResponseEntity<RespuestaMensaje> restablecerPassword(
+            @Valid @RequestBody SolicitudRestablecerPassword solicitud) {
+        servicioAutenticacion.restablecerPassword(solicitud);
+        return ResponseEntity.ok(new RespuestaMensaje("Tu contraseña ha sido actualizada exitosamente."));
     }
 }

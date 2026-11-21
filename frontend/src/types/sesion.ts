@@ -13,6 +13,30 @@ export interface UsuarioSesion {
   nombre: string;
   rol: RolUsuario;
   estado: EstadoUsuario;
+  reputacion?: number;
+}
+
+/** Profile view data (HU-04). */
+export interface PerfilUsuario {
+  id: string;
+  correo: string;
+  nombre: string;
+  rol: string;
+  reputacion: number;
+  totalReportes: number;
+  fechaRegistro: string;
+  historialReportes: import('./index').Incident[];
+}
+
+/** Payload sent to POST /api/auth/recuperar-password (HU-03). */
+export interface DatosRecuperarPassword {
+  correo: string;
+}
+
+/** Payload sent to POST /api/auth/restablecer-password (HU-03). */
+export interface DatosRestablecerPassword {
+  token: string;
+  nuevaPassword: string;
 }
 
 /** Payload sent to POST /api/auth/registro. */
