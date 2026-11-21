@@ -1,67 +1,58 @@
 # BiciSafe
 
-Plataforma de **ciclorutas seguras y reporte comunitario** para Lima Sur. Permite planificar rutas
-en bicicleta, reportar y validar incidencias de forma comunitaria, y administrar los parámetros del
-sistema. El proyecto está organizado como un **monolito modular**.
+Plataforma web para ciclistas urbanos en Lima. Permite planificar rutas seguras por ciclovías, reportar incidencias viales y validarlas mediante consenso comunitario.
 
-## Stack tecnológico
+## Requisitos
 
-| Capa | Tecnología |
-|------|------------|
-| Backend | Java 21, Spring Boot 4.1.1, Maven, Spring Security + JWT, Spring Data JPA, Flyway |
-| Base de datos | PostgreSQL + PostGIS |
-| Caché | Caffeine |
-| API docs | springdoc OpenAPI (Swagger UI) |
-| Frontend | React 18 + TypeScript, Vite, Tailwind CSS, Leaflet |
-| Servicios externos | OpenRouteService, OpenStreetMap (tiles/Nominatim), Gmail SMTP |
-| Infra / CI | Docker Compose (opcional), GitHub Actions, despliegue en Render |
+- **Java 21**
+- **Node.js 18+** y npm
+- **PostgreSQL** con extensión **PostGIS**
 
-## Cómo ejecutar
+## Puesta en marcha
 
-Requisitos: **JDK 21**, **Node 18+** y una **base PostgreSQL con PostGIS** (existente o vía
-`docker compose up -d`). La configuración de conexión se toma de variables de entorno (ver
-`.env.example`); por defecto en `dev` apunta a `jdbc:postgresql://localhost:5432/bicisafe`.
+### 1. Base de datos
 
-### Linux
+Puedes levantar PostgreSQL con PostGIS usando Docker:
 
 ```bash
-# Backend (aplica migraciones Flyway al arrancar)
-cd backend && ./mvnw spring-boot:run
-
-# Frontend
-cd frontend && npm install && npm run dev
+docker compose up -d
 ```
 
-### Windows
+O conectar a una base de datos local existente con el nombre `bicisafe`.
 
-```bat
-:: Backend (usa el wrapper .cmd)
+### 2. Backend
+
+```bash
 cd backend
-mvnw.cmd spring-boot:run
+./mvnw spring-boot:run
+```
 
-:: Frontend (en otra terminal)
+El servicio estará disponible en `http://localhost:8080`.
+
+### 3. Frontend
+
+En otra terminal:
+
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### Variables de entorno
+La aplicación web iniciará en `http://localhost:3000`.
 
-Copia `.env.example` a `.env` y ajusta los valores, o defínelos en el sistema:
+## Pruebas
 
-```bat
-:: Windows CMD
-set DB_URL=jdbc:postgresql://localhost:5432/bicisafe
-set DB_USERNAME=user
-set DB_PASSWORD=1234
-```
+- **Backend**:
+  ```bash
+  cd backend && ./mvnw test
+  ```
+- **Frontend**:
+  ```bash
+  cd frontend && npm test
+  ```
 
-```powershell
-# Windows PowerShell
-$env:DB_URL = "jdbc:postgresql://localhost:5432/bicisafe"
-$env:DB_USERNAME = "user"
-$env:DB_PASSWORD = "1234"
-```
+## Estructura
 
-Variables principales: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `ORS_API_KEY`,
-`MAIL_*`. Detalle de cada una en `.env.example`. Spring Boot **no** lee `.env`: defínelo como variables del sistema/IDE.
+- `backend/`: API REST en Spring Boot (Spring Security, JWT, Spring Data JPA, Flyway).
+- `frontend/`: Aplicación SPA en React con TypeScript, Vite, Tailwind CSS y Leaflet.

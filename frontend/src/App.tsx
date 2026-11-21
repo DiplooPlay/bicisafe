@@ -52,21 +52,38 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion, tokenRes
   const [reputationScore, setReputationScore] = useState(usuario?.reputacion ?? 15);
   const [notification, setNotification] = useState<string | null>(null);
   const [votedIncidentIds, setVotedIncidentIds] = useState<Record<string, 'CONFIRM' | 'RESOLVE'>>(() => {
+    if (!usuario?.id) return {};
     try {
-      const guardados = localStorage.getItem('bicisafe_votos');
+      const guardados = localStorage.getItem(`bicisafe_votos_${usuario.id}`);
       return guardados ? JSON.parse(guardados) : {};
     } catch {
       return {};
     }
   });
 
+  // Cargar votos locales específicos del usuario cuando cambia la sesión
+  useEffect(() => {
+    if (usuario?.id) {
+      try {
+        const guardados = localStorage.getItem(`bicisafe_votos_${usuario.id}`);
+        setVotedIncidentIds(guardados ? JSON.parse(guardados) : {});
+      } catch {
+        setVotedIncidentIds({});
+      }
+    } else {
+      setVotedIncidentIds({});
+    }
+  }, [usuario?.id]);
+
   const registrarVotoLocal = (id: string, tipo: 'CONFIRM' | 'RESOLVE') => {
     setVotedIncidentIds(prev => {
       const nuevo = { ...prev, [id]: tipo };
-      try {
-        localStorage.setItem('bicisafe_votos', JSON.stringify(nuevo));
-      } catch {
-        // ignore
+      if (usuario?.id) {
+        try {
+          localStorage.setItem(`bicisafe_votos_${usuario.id}`, JSON.stringify(nuevo));
+        } catch {
+          // ignore
+        }
       }
       return nuevo;
     });
@@ -141,7 +158,6 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion, tokenRes
           return item;
         })
       );
-      setReputationScore(r => Math.min(20, r + 1));
       showNotification('Incidente confirmado');
     } catch (err: any) {
       showNotification(err.message || 'Error al confirmar');
@@ -219,6 +235,7 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion, tokenRes
 
   const manejarLogout = () => {
     cerrarSesion();
+    setVotedIncidentIds({});
     setVista('mapa');
     showNotification('Sesión cerrada correctamente.');
   };
