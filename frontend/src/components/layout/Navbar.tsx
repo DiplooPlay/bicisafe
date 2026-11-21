@@ -43,7 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onSelectTab, usuario
                   : 'text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface'
               }`}
             >
-              <span>Validar</span>
+              <span>Incidencias</span>
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
             </button>
           </nav>

@@ -114,7 +114,7 @@ export async function resolverIncidenteApi(id: string, token?: string | null): P
 }
 
 /** Reports an inappropriate, fake or duplicate incident (HU-14). */
-export async function denunciarIncidenteApi(id: string, motivo: string, comentario?: string): Promise<void> {
+export async function denunciarIncidenteApi(id: string, motivo: string, comentario?: string): Promise<Incident> {
   const token = localStorage.getItem('bicisafe.token');
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) {
@@ -135,6 +135,8 @@ export async function denunciarIncidenteApi(id: string, motivo: string, comentar
     }
     throw new Error(mensaje);
   }
+  const data = await res.json();
+  return mapDtoToIncident(data);
 }
 
 /** Fetches active incidents that intersect a route path (HU-09). */
@@ -169,6 +171,7 @@ export function normalizarEstado(estado?: string): IncidentStatus {
   if (e === 'PENDIENTE' || e === 'PENDING') return 'PENDING';
   if (e === 'EN_DISPUTA' || e === 'DISPUTED') return 'DISPUTED';
   if (e === 'CONFIRMADO' || e === 'CONFIRMED') return 'CONFIRMED';
+  if (e === 'INVALIDO' || e === 'INVALID' || e === 'FALSO') return 'INVALID';
   if (e === 'RESUELTO' || e === 'RESOLVED') return 'RESOLVED';
   if (e === 'EXPIRADO' || e === 'EXPIRED') return 'EXPIRED';
   return 'PENDING';
@@ -183,14 +186,16 @@ export function mapDtoToIncident(dto: any): Incident {
     locationName: dto.ubicacionTexto || 'Lima',
     lat: dto.latitud,
     lng: dto.longitud,
-    votesConfirm: dto.votosConfirmar || 1,
-    votesReject: dto.votosRechazar || 0,
+    votesConfirm: dto.votosConfirmar !== undefined ? dto.votosConfirmar : 1,
+    votesReject: dto.votosRechazar !== undefined ? dto.votosRechazar : 0,
     requiredVotes: dto.votosRequeridos || 3,
     status: normalizarEstado(dto.estado),
     authorName: dto.autorNombre || 'Ciclista Urbano',
     authorReputation: dto.autorReputacion || 15,
     imageUrl: dto.fotoUrl || undefined,
     createdAt: dto.fechaCreacion ? new Date(dto.fechaCreacion).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Reciente',
-    expiresInMinutes: dto.minutosRestantes !== undefined ? dto.minutosRestantes : 60
+    expiresInMinutes: dto.minutosRestantes !== undefined ? dto.minutosRestantes : 60,
+    reportsFake: dto.denunciasFalso || 0,
+    reportsDuplicate: dto.denunciasDuplicado || 0
   };
 }

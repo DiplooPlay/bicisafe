@@ -119,11 +119,23 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion, tokenRes
         prev.map(item => {
           if (item.id === id) {
             const newVotes = item.votesConfirm + 1;
-            const isNowConfirmed = newVotes >= item.requiredVotes;
+            const fakeVotes = (item.reportsFake || 0) + (item.reportsDuplicate || 0);
+            let newStatus = item.status;
+            if (newVotes >= 3 && fakeVotes >= 3) {
+              if (newVotes > fakeVotes) newStatus = 'CONFIRMED';
+              else if (fakeVotes > newVotes) newStatus = 'INVALID';
+              else newStatus = 'DISPUTED';
+            } else if (newVotes >= 3) {
+              newStatus = 'CONFIRMED';
+            } else if (fakeVotes >= 3) {
+              newStatus = 'INVALID';
+            } else {
+              newStatus = 'PENDING';
+            }
             return {
               ...item,
               votesConfirm: newVotes,
-              status: isNowConfirmed ? 'CONFIRMED' : item.status
+              status: newStatus
             };
           }
           return item;
@@ -136,7 +148,7 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion, tokenRes
     }
   };
 
-  // HU4: Marcar incidente como resuelto / ya no existe
+  // HU4: Marcar incidente como resuelto / ya no existe (requiere 3 votos para aprobar)
   const handleRejectIncident = async (id: string) => {
     if (votedIncidentIds[id]) {
       showNotification('Ya has votado en este reporte.');
@@ -148,16 +160,18 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion, tokenRes
       setIncidents(prev =>
         prev.map(item => {
           if (item.id === id) {
+            const newReject = item.votesReject + 1;
+            const isNowResolved = newReject >= 3;
             return {
               ...item,
-              status: 'RESOLVED',
-              votesReject: item.votesReject + 1
+              votesReject: newReject,
+              status: isNowResolved ? 'RESOLVED' : item.status
             };
           }
           return item;
         })
       );
-      showNotification('Incidente resuelto');
+      showNotification('Voto de resolución registrado');
     } catch (err: any) {
       showNotification(err.message || 'Error al resolver');
     }
@@ -287,7 +301,7 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion, tokenRes
           </div>
         )}
 
-        {/* TAB: VALIDACIÓN COMUNITARIA (requiere sesión de ciclista) */}
+        {/* TAB: VALIDACIÓN COMUNITARIA / INCIDENCIAS (requiere sesión de ciclista) */}
         {vista === 'validar' && usuario && (
           <ValidarIncidentes
             incidents={incidents}
@@ -295,6 +309,9 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion, tokenRes
             onRejectIncident={handleRejectIncident}
             reputationScore={reputationScore}
             votedIncidentIds={votedIncidentIds}
+            onIncidentUpdated={(updated) => {
+              setIncidents(prev => prev.map(i => i.id === updated.id ? updated : i));
+            }}
           />
         )}
 

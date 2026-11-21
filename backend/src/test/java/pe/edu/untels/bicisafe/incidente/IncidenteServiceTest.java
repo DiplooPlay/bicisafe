@@ -113,12 +113,13 @@ class IncidenteServiceTest {
     }
 
     @Test
-    @DisplayName("marcar incidente como RESUELTO cuando se solicita retirarlo")
+    @DisplayName("marcar incidente como RESUELTO cuando se alcanzan 3 votos de resuelto")
     void shouldMarkIncidentAsResolvedWhenRequested() {
         UUID id = UUID.randomUUID();
         Incidente existente = new Incidente();
         existente.setId(id);
         existente.setEstado(EstadoIncidente.CONFIRMADO);
+        existente.setVotosRechazar(2); // With one more, it reaches 3
 
         when(incidenteRepository.findById(id)).thenReturn(Optional.of(existente));
         when(incidenteRepository.save(any(Incidente.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -126,7 +127,7 @@ class IncidenteServiceTest {
         Incidente resultado = incidenteService.resolverIncidente(id);
 
         assertThat(resultado.getEstado()).isEqualTo(EstadoIncidente.RESUELTO);
-        assertThat(resultado.getVotosRechazar()).isEqualTo(1);
+        assertThat(resultado.getVotosRechazar()).isEqualTo(3);
     }
 
     @Test
@@ -207,12 +208,14 @@ class IncidenteServiceTest {
     }
 
     @Test
-    @DisplayName("denunciar incidente inapropiado como falso o duplicado (HU-14)")
+    @DisplayName("denunciar incidente inapropiado como falso o duplicado resultando en disputa por empate (HU-14)")
     void shouldReportInappropriateIncident() {
         UUID id = UUID.randomUUID();
         Incidente existente = new Incidente();
         existente.setId(id);
-        existente.setEstado(EstadoIncidente.PENDIENTE);
+        existente.setEstado(EstadoIncidente.CONFIRMADO);
+        existente.setVotosConfirmar(3);
+        existente.setDenunciasDuplicado(2);
 
         when(incidenteRepository.findById(id)).thenReturn(Optional.of(existente));
         when(incidenteRepository.save(any(Incidente.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -220,7 +223,7 @@ class IncidenteServiceTest {
         UUID usuarioId = UUID.randomUUID();
         Incidente resultado = incidenteService.denunciarIncidente(id, usuarioId, "DUPLICADO", "Mismo reporte que otro");
 
-        assertThat(resultado.getDenunciasDuplicado()).isEqualTo(1);
+        assertThat(resultado.getDenunciasDuplicado()).isEqualTo(3);
         assertThat(resultado.getEstado()).isEqualTo(EstadoIncidente.EN_DISPUTA);
         verify(denunciaRepository).save(any(IncidenteDenuncia.class));
     }
@@ -313,8 +316,49 @@ class IncidenteServiceTest {
 
         Incidente resultado = incidenteService.denunciarIncidente(id, denunciante, "FALSO", "Es mentira");
 
-        assertThat(resultado.getEstado()).isEqualTo(EstadoIncidente.RESUELTO);
+        assertThat(resultado.getEstado()).isEqualTo(EstadoIncidente.INVALIDO);
         verify(servicioRegistro).sumarReputacion(autorId, -5);
+    }
+
+    @Test
+    @DisplayName("pasar a CONFIRMADO cuando ambos superan 3 y las validaciones ganan")
+    void shouldGoToConfirmadoWhenBothExceed3AndValidationsWin() {
+        Incidente inc = new Incidente();
+        inc.setVotosConfirmar(4);
+        inc.setDenunciasFalso(3);
+        inc.actualizarEstadoConsenso();
+        assertThat(inc.getEstado()).isEqualTo(EstadoIncidente.CONFIRMADO);
+    }
+
+    @Test
+    @DisplayName("pasar a INVALIDO cuando ambos superan 3 y las acusaciones ganan")
+    void shouldGoToInvalidoWhenBothExceed3AndAccusationsWin() {
+        Incidente inc = new Incidente();
+        inc.setVotosConfirmar(3);
+        inc.setDenunciasFalso(5);
+        inc.actualizarEstadoConsenso();
+        assertThat(inc.getEstado()).isEqualTo(EstadoIncidente.INVALIDO);
+    }
+
+    @Test
+    @DisplayName("pasar a EN_DISPUTA cuando ambos superan 3 y están en empate")
+    void shouldGoToEnDisputaWhenBothExceed3AndTied() {
+        Incidente inc = new Incidente();
+        inc.setVotosConfirmar(3);
+        inc.setDenunciasFalso(3);
+        inc.actualizarEstadoConsenso();
+        assertThat(inc.getEstado()).isEqualTo(EstadoIncidente.EN_DISPUTA);
+    }
+
+    @Test
+    @DisplayName("pasar a RESUELTO cuando se alcanzan 3 votos de resuelto")
+    void shouldGoToResueltoWhenReaching3ResolvedVotes() {
+        Incidente inc = new Incidente();
+        inc.setVotosConfirmar(5);
+        inc.setVotosRechazar(3);
+        inc.actualizarEstadoConsenso();
+        assertThat(inc.getEstado()).isEqualTo(EstadoIncidente.RESUELTO);
+        assertThat(inc.estaActivo()).isFalse();
     }
 
     @Test

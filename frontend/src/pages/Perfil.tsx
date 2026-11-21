@@ -139,9 +139,13 @@ export const Perfil: React.FC<PerfilProps> = ({ onVolverAlMapa }) => {
                       ? 'bg-primary/10 text-primary'
                       : rep.status === 'RESOLVED'
                       ? 'bg-surface-container text-outline'
+                      : rep.status === 'INVALID'
+                      ? 'bg-error/10 text-error'
+                      : rep.status === 'DISPUTED'
+                      ? 'bg-secondary/10 text-secondary'
                       : 'bg-amber-500/10 text-amber-700'
                   }`}>
-                    {rep.status === 'CONFIRMED' ? 'Confirmado' : rep.status === 'RESOLVED' ? 'Resuelto' : 'Pendiente'}
+                    {rep.status === 'CONFIRMED' ? 'Confirmado' : rep.status === 'RESOLVED' ? 'Resuelto' : rep.status === 'INVALID' ? 'Inválido' : rep.status === 'DISPUTED' ? 'En disputa' : 'Pendiente'}
                   </span>
                 </div>
               ))}

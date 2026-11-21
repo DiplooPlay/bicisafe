@@ -36,7 +36,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab, p
           </span>
         </button>
 
-        {/* Validar */}
+        {/* Incidencias */}
         <button
           onClick={() => onSelectTab('validar')}
           className={`flex flex-col items-center justify-center gap-1 w-16 h-12 transition-colors cursor-pointer relative ${
@@ -44,7 +44,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab, p
           }`}
         >
           <span className="material-symbols-outlined text-[24px]">how_to_vote</span>
-          <span className="font-label-sm text-[11px]">Validar</span>
+          <span className="font-label-sm text-[11px]">Incidencias</span>
           {pendingCount > 0 && (
             <span className="absolute top-1 right-2 w-4 h-4 rounded-full bg-error text-on-error text-[9px] font-bold flex items-center justify-center">
               {pendingCount}
