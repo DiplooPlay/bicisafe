@@ -20,4 +20,8 @@ public interface IncidenteRepository extends JpaRepository<Incidente, UUID> {
     );
 
     List<Incidente> findAllByOrderByFechaCreacionDesc();
+
+    List<Incidente> findByUsuarioIdOrderByFechaCreacionDesc(UUID usuarioId);
+
+    long countByUsuarioId(UUID usuarioId);
 }

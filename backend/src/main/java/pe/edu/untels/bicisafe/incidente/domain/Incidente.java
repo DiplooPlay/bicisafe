@@ -75,6 +75,12 @@ public class Incidente {
     @Column(name = "votos_requeridos", nullable = false)
     private int votosRequeridos = 3;
 
+    @Column(name = "denuncias_falso", nullable = false)
+    private int denunciasFalso = 0;
+
+    @Column(name = "denuncias_duplicado", nullable = false)
+    private int denunciasDuplicado = 0;
+
     @Column(name = "fecha_creacion", nullable = false)
     private Instant fechaCreacion;
 
@@ -98,6 +104,7 @@ public class Incidente {
         this.votosConfirmar++;
         if (this.votosConfirmar >= this.votosRequeridos) {
             this.estado = EstadoIncidente.CONFIRMADO;
+            this.fechaExpiracion = Instant.now().plus(6, ChronoUnit.HOURS);
         } else if (this.votosRechazar > 0 && this.votosConfirmar == this.votosRechazar) {
             this.estado = EstadoIncidente.EN_DISPUTA;
         }
@@ -111,7 +118,33 @@ public class Incidente {
         this.estado = EstadoIncidente.RESUELTO;
     }
 
+    /**
+     * Marks the incident as expired (HU-15).
+     */
+    public void marcarComoExpirado() {
+        this.estado = EstadoIncidente.EXPIRADO;
+    }
+
+    /**
+     * Flags an inappropriate incident as false or duplicate (HU-14).
+     */
+    public void registrarDenuncia(String motivo) {
+        if ("DUPLICADO".equalsIgnoreCase(motivo)) {
+            this.denunciasDuplicado++;
+        } else {
+            this.denunciasFalso++;
+        }
+
+        if (this.denunciasFalso >= 3) {
+            this.estado = EstadoIncidente.RESUELTO;
+        } else if (this.denunciasFalso + this.denunciasDuplicado >= 1) {
+            this.estado = EstadoIncidente.EN_DISPUTA;
+        }
+    }
+
     public boolean estaActivo() {
-        return this.estado != EstadoIncidente.RESUELTO && Instant.now().isBefore(this.fechaExpiracion);
+        return this.estado != EstadoIncidente.RESUELTO
+                && this.estado != EstadoIncidente.EXPIRADO
+                && (this.fechaExpiracion == null || Instant.now().isBefore(this.fechaExpiracion));
     }
 }
