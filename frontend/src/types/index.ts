@@ -1,6 +1,6 @@
 export type IncidentCategory = 'bache' | 'obras' | 'bloqueo' | 'iluminacion' | 'otro';
 
-export type IncidentStatus = 'PENDING' | 'DISPUTED' | 'CONFIRMED' | 'RESOLVED' | 'EXPIRED';
+export type IncidentStatus = 'PENDING' | 'DISPUTED' | 'CONFIRMED' | 'INVALID' | 'RESOLVED' | 'EXPIRED';
 
 export interface Incident {
   id: string;

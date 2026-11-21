@@ -102,20 +102,18 @@ public class Incidente {
      */
     public void registrarConfirmacion() {
         this.votosConfirmar++;
-        if (this.votosConfirmar >= this.votosRequeridos) {
-            this.estado = EstadoIncidente.CONFIRMADO;
+        actualizarEstadoConsenso();
+        if (this.estado == EstadoIncidente.CONFIRMADO && this.fechaExpiracion != null) {
             this.fechaExpiracion = Instant.now().plus(6, ChronoUnit.HOURS);
-        } else if (this.votosRechazar > 0 && this.votosConfirmar == this.votosRechazar) {
-            this.estado = EstadoIncidente.EN_DISPUTA;
         }
     }
 
     /**
-     * Rejects or marks incident as resolved/cleared.
+     * Registers a vote marking incident as resolved/cleared. Reaching 3 votes approves it as RESUELTO.
      */
     public void marcarComoResuelto() {
         this.votosRechazar++;
-        this.estado = EstadoIncidente.RESUELTO;
+        actualizarEstadoConsenso();
     }
 
     /**
@@ -134,16 +132,54 @@ public class Incidente {
         } else {
             this.denunciasFalso++;
         }
+        actualizarEstadoConsenso();
+    }
 
-        if (this.denunciasFalso >= 3) {
+    /**
+     * Reglas de consenso comunitario:
+     * - Si logra tener 3 votos de resuelto, se aprueba como RESUELTO y desaparece de las demás áreas.
+     * - Si tiene al menos 3 validaciones y menos de 3 acusaciones: CONFIRMADO.
+     * - Si no logra 3 validaciones y en su lugar tiene 3 acusaciones de falso: INVALIDO.
+     * - Si ambos superan las 3 acusaciones/validaciones: va al más votado.
+     * - Si ambos superan las 3 y están en empate: EN_DISPUTA.
+     * - Si ninguno alcanza las 3: PENDIENTE.
+     */
+    public void actualizarEstadoConsenso() {
+        if (this.estado == EstadoIncidente.EXPIRADO) {
+            return;
+        }
+
+        if (this.votosRechazar >= 3) {
             this.estado = EstadoIncidente.RESUELTO;
-        } else if (this.denunciasFalso + this.denunciasDuplicado >= 1) {
-            this.estado = EstadoIncidente.EN_DISPUTA;
+            return;
+        }
+
+        int confirmaciones = this.votosConfirmar;
+        int acusaciones = this.denunciasFalso + this.denunciasDuplicado;
+
+        boolean confirmaAlcanzado = confirmaciones >= 3;
+        boolean acusacionAlcanzado = acusaciones >= 3;
+
+        if (confirmaAlcanzado && acusacionAlcanzado) {
+            if (confirmaciones > acusaciones) {
+                this.estado = EstadoIncidente.CONFIRMADO;
+            } else if (acusaciones > confirmaciones) {
+                this.estado = EstadoIncidente.INVALIDO;
+            } else {
+                this.estado = EstadoIncidente.EN_DISPUTA;
+            }
+        } else if (confirmaAlcanzado) {
+            this.estado = EstadoIncidente.CONFIRMADO;
+        } else if (acusacionAlcanzado) {
+            this.estado = EstadoIncidente.INVALIDO;
+        } else {
+            this.estado = EstadoIncidente.PENDIENTE;
         }
     }
 
     public boolean estaActivo() {
         return this.estado != EstadoIncidente.RESUELTO
+                && this.estado != EstadoIncidente.INVALIDO
                 && this.estado != EstadoIncidente.EXPIRADO
                 && (this.fechaExpiracion == null || Instant.now().isBefore(this.fechaExpiracion));
     }

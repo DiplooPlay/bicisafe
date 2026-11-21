@@ -247,7 +247,7 @@ public class IncidenteServiceImpl implements IncidenteService {
         entidad.registrarDenuncia(motivo);
         Incidente guardado = incidenteRepository.save(entidad);
 
-        if (guardado.getEstado() == EstadoIncidente.RESUELTO && guardado.getUsuarioId() != null) {
+        if (guardado.getEstado() == EstadoIncidente.INVALIDO && guardado.getUsuarioId() != null) {
             servicioRegistro.sumarReputacion(guardado.getUsuarioId(), -5);
         }
 
@@ -259,7 +259,9 @@ public class IncidenteServiceImpl implements IncidenteService {
     public void expirarIncidentesVencidos() {
         Instant ahora = Instant.now();
         List<Incidente> activos = incidenteRepository.findAll().stream()
-                .filter(i -> i.getEstado() != EstadoIncidente.RESUELTO && i.getEstado() != EstadoIncidente.EXPIRADO)
+                .filter(i -> i.getEstado() != EstadoIncidente.RESUELTO
+                        && i.getEstado() != EstadoIncidente.INVALIDO
+                        && i.getEstado() != EstadoIncidente.EXPIRADO)
                 .filter(i -> i.getFechaExpiracion() != null && ahora.isAfter(i.getFechaExpiracion()))
                 .toList();
 
