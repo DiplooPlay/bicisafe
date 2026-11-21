@@ -14,6 +14,7 @@ import pe.edu.untels.bicisafe.auth.service.ServicioCorreo;
 import pe.edu.untels.bicisafe.auth.service.ServicioRegistro;
 import pe.edu.untels.bicisafe.compartido.excepcion.EntradaInvalidaExcepcion;
 import pe.edu.untels.bicisafe.compartido.excepcion.RecursoNoEncontradoExcepcion;
+import pe.edu.untels.bicisafe.compartido.excepcion.ValorDuplicadoExcepcion;
 import pe.edu.untels.bicisafe.incidente.domain.CategoriaIncidente;
 import pe.edu.untels.bicisafe.incidente.domain.EstadoIncidente;
 import pe.edu.untels.bicisafe.incidente.domain.Incidente;
@@ -21,6 +22,7 @@ import pe.edu.untels.bicisafe.incidente.domain.IncidenteDenuncia;
 import pe.edu.untels.bicisafe.incidente.dto.IncidenteRequest;
 import pe.edu.untels.bicisafe.incidente.repository.IncidenteDenunciaRepository;
 import pe.edu.untels.bicisafe.incidente.repository.IncidenteRepository;
+import pe.edu.untels.bicisafe.incidente.repository.IncidenteVotoRepository;
 import pe.edu.untels.bicisafe.incidente.service.IncidenteService;
 import pe.edu.untels.bicisafe.incidente.service.IncidenteServiceImpl;
 import pe.edu.untels.bicisafe.ruta.dto.UsuarioRutaAfectada;
@@ -43,6 +45,7 @@ class IncidenteServiceTest {
 
     private IncidenteRepository incidenteRepository;
     private IncidenteDenunciaRepository denunciaRepository;
+    private IncidenteVotoRepository incidenteVotoRepository;
     private ServicioRegistro servicioRegistro;
     private ServicioCorreo servicioCorreo;
     private ServicioRutaGuardada servicioRutaGuardada;
@@ -52,12 +55,14 @@ class IncidenteServiceTest {
     void setUp() {
         incidenteRepository = mock(IncidenteRepository.class);
         denunciaRepository = mock(IncidenteDenunciaRepository.class);
+        incidenteVotoRepository = mock(IncidenteVotoRepository.class);
         servicioRegistro = mock(ServicioRegistro.class);
         servicioCorreo = mock(ServicioCorreo.class);
         servicioRutaGuardada = mock(ServicioRutaGuardada.class);
         incidenteService = new IncidenteServiceImpl(
                 incidenteRepository,
                 denunciaRepository,
+                incidenteVotoRepository,
                 servicioRegistro,
                 servicioCorreo,
                 servicioRutaGuardada);
@@ -165,6 +170,40 @@ class IncidenteServiceTest {
                 eq("Casa al Trabajo"),
                 eq("OBRAS"),
                 eq("Av. Arequipa cdra 20"));
+    }
+
+    @Test
+    @DisplayName("rechazar voto duplicado de un usuario en el mismo incidente")
+    void shouldRejectDuplicateVoteWhenConfirming() {
+        UUID id = UUID.randomUUID();
+        UUID usuarioId = UUID.randomUUID();
+        Incidente existente = new Incidente();
+        existente.setId(id);
+        existente.setEstado(EstadoIncidente.PENDIENTE);
+
+        when(incidenteRepository.findById(id)).thenReturn(Optional.of(existente));
+        when(incidenteVotoRepository.existsByIncidenteIdAndUsuarioId(id, usuarioId)).thenReturn(true);
+
+        assertThatThrownBy(() -> incidenteService.confirmarIncidente(id, usuarioId))
+                .isInstanceOf(ValorDuplicadoExcepcion.class)
+                .hasMessageContaining("Ya has votado");
+    }
+
+    @Test
+    @DisplayName("rechazar resolución duplicada de un usuario en el mismo incidente")
+    void shouldRejectDuplicateVoteWhenResolving() {
+        UUID id = UUID.randomUUID();
+        UUID usuarioId = UUID.randomUUID();
+        Incidente existente = new Incidente();
+        existente.setId(id);
+        existente.setEstado(EstadoIncidente.PENDIENTE);
+
+        when(incidenteRepository.findById(id)).thenReturn(Optional.of(existente));
+        when(incidenteVotoRepository.existsByIncidenteIdAndUsuarioId(id, usuarioId)).thenReturn(true);
+
+        assertThatThrownBy(() -> incidenteService.resolverIncidente(id, usuarioId))
+                .isInstanceOf(ValorDuplicadoExcepcion.class)
+                .hasMessageContaining("Ya has votado");
     }
 
     @Test

@@ -51,6 +51,26 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion, tokenRes
   const [pickedCoords, setPickedCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [reputationScore, setReputationScore] = useState(usuario?.reputacion ?? 15);
   const [notification, setNotification] = useState<string | null>(null);
+  const [votedIncidentIds, setVotedIncidentIds] = useState<Record<string, 'CONFIRM' | 'RESOLVE'>>(() => {
+    try {
+      const guardados = localStorage.getItem('bicisafe_votos');
+      return guardados ? JSON.parse(guardados) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const registrarVotoLocal = (id: string, tipo: 'CONFIRM' | 'RESOLVE') => {
+    setVotedIncidentIds(prev => {
+      const nuevo = { ...prev, [id]: tipo };
+      try {
+        localStorage.setItem('bicisafe_votos', JSON.stringify(nuevo));
+      } catch {
+        // ignore
+      }
+      return nuevo;
+    });
+  };
 
   // Hook de Geolocalización con alta precisión (GPS / Triangulación satelital)
   const { coords: userCoords, accuracy, isHighAccuracy, obtenerUbicacion: handleGetLocation } = useGeolocalizacion();
@@ -88,8 +108,13 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion, tokenRes
 
   // HU3: Confirmar incidente (+1 voto / consenso)
   const handleConfirmIncident = async (id: string) => {
+    if (votedIncidentIds[id]) {
+      showNotification('Ya has votado en este reporte.');
+      return;
+    }
     try {
       await confirmarIncidenteApi(id, token);
+      registrarVotoLocal(id, 'CONFIRM');
       setIncidents(prev =>
         prev.map(item => {
           if (item.id === id) {
@@ -104,7 +129,7 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion, tokenRes
           return item;
         })
       );
-      setReputationScore(r => r + 1);
+      setReputationScore(r => Math.min(20, r + 1));
       showNotification('Incidente confirmado');
     } catch (err: any) {
       showNotification(err.message || 'Error al confirmar');
@@ -113,8 +138,13 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion, tokenRes
 
   // HU4: Marcar incidente como resuelto / ya no existe
   const handleRejectIncident = async (id: string) => {
+    if (votedIncidentIds[id]) {
+      showNotification('Ya has votado en este reporte.');
+      return;
+    }
     try {
       await resolverIncidenteApi(id, token);
+      registrarVotoLocal(id, 'RESOLVE');
       setIncidents(prev =>
         prev.map(item => {
           if (item.id === id) {
@@ -138,7 +168,8 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion, tokenRes
     try {
       const reportGuardado = await reportarIncidenteApi(newReportData, token);
       setIncidents(prev => [reportGuardado, ...prev]);
-      setReputationScore(r => r + 2);
+      registrarVotoLocal(reportGuardado.id, 'CONFIRM');
+      setReputationScore(r => Math.min(20, r + 2));
       showNotification('Incidente reportado');
     } catch (err: any) {
       showNotification(err.message || 'Error al reportar');
@@ -228,6 +259,7 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion, tokenRes
               onSelectMapLocation={handleSelectMapLocation}
               onRecenterGPS={handleGetLocation}
               isPickingLocation={isPickingLocation}
+              votedIncidentIds={votedIncidentIds}
             />
 
             {/* Planificador de Ruta (Desktop) */}
@@ -262,6 +294,7 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion, tokenRes
             onConfirmIncident={handleConfirmIncident}
             onRejectIncident={handleRejectIncident}
             reputationScore={reputationScore}
+            votedIncidentIds={votedIncidentIds}
           />
         )}
 

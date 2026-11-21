@@ -25,7 +25,11 @@ public interface IncidenteService {
 
     Incidente confirmarIncidente(UUID id);
 
+    Incidente confirmarIncidente(UUID id, UUID usuarioId);
+
     Incidente resolverIncidente(UUID id);
+
+    Incidente resolverIncidente(UUID id, UUID usuarioId);
 
     Incidente denunciarIncidente(UUID id, UUID usuarioId, String motivo, String comentario);
 
