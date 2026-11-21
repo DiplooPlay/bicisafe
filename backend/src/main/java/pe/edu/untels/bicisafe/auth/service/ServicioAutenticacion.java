@@ -28,5 +28,19 @@ public interface ServicioAutenticacion {
      * @param token JWT token to invalidate
      */
     void cerrarSesion(String token);
+
+    /**
+     * Generates a 15-minute recovery token and emails it to the cyclist (HU-03).
+     *
+     * @param solicitud contains the cyclist email
+     */
+    void solicitarRecuperacionPassword(pe.edu.untels.bicisafe.auth.dto.SolicitudRecuperarPassword solicitud);
+
+    /**
+     * Resets the cyclist's password using the time-limited token (HU-03).
+     *
+     * @param solicitud contains the recovery token and new password
+     */
+    void restablecerPassword(pe.edu.untels.bicisafe.auth.dto.SolicitudRestablecerPassword solicitud);
 }
 

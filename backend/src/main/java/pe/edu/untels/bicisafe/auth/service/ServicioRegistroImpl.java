@@ -97,6 +97,24 @@ public class ServicioRegistroImpl implements ServicioRegistro {
                         "No existe una cuenta con el usuario indicado."));
     }
 
+    @Override
+    @Transactional
+    public void eliminarCuenta(java.util.UUID id) {
+        if (!usuarioRepository.existsById(id)) {
+            throw new RecursoNoEncontradoExcepcion("id", "Usuario no encontrado.");
+        }
+        usuarioRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    public void sumarReputacion(java.util.UUID usuarioId, int puntos) {
+        usuarioRepository.findById(usuarioId).ifPresent(u -> {
+            u.sumarReputacion(puntos);
+            usuarioRepository.save(u);
+        });
+    }
+
     private void enviarCorreoVerificacion(Usuario usuario) {
         TokenVerificacion token = TokenVerificacion.generar(usuario);
         tokenRepository.save(token);

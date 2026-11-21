@@ -106,4 +106,28 @@ class RegistroServiceImplTest {
                 .isInstanceOf(TokenConfirmacionInvalidoExcepcion.class)
                 .hasMessageContaining("ya fue usado");
     }
+
+    @Test
+    @DisplayName("eliminar cuenta de usuario existente (RNF-10)")
+    void shouldDeleteExistingUserAccount() {
+        java.util.UUID usuarioId = java.util.UUID.randomUUID();
+        when(usuarioRepository.existsById(usuarioId)).thenReturn(true);
+
+        servicio.eliminarCuenta(usuarioId);
+
+        verify(usuarioRepository).deleteById(usuarioId);
+    }
+
+    @Test
+    @DisplayName("sumar reputación al ciclista (HU-04)")
+    void shouldUpdateCyclistReputation() {
+        java.util.UUID usuarioId = java.util.UUID.randomUUID();
+        Usuario usuario = Usuario.nuevoPendiente("ana@correo.com", "hash", "Ana");
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+
+        servicio.sumarReputacion(usuarioId, 5);
+
+        assertThat(usuario.getReputacion()).isEqualTo(20);
+        verify(usuarioRepository).save(usuario);
+    }
 }
