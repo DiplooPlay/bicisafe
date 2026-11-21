@@ -1,6 +1,6 @@
 export type IncidentCategory = 'bache' | 'obras' | 'bloqueo' | 'iluminacion' | 'otro';
 
-export type IncidentStatus = 'PENDING' | 'DISPUTED' | 'CONFIRMED' | 'RESOLVED';
+export type IncidentStatus = 'PENDING' | 'DISPUTED' | 'CONFIRMED' | 'RESOLVED' | 'EXPIRED';
 
 export interface Incident {
   id: string;
@@ -19,6 +19,8 @@ export interface Incident {
   imageUrl?: string;
   createdAt: string;
   expiresInMinutes: number;
+  reportsFake?: number;
+  reportsDuplicate?: number;
 }
 
 export interface CycleWay {
@@ -28,7 +30,7 @@ export interface CycleWay {
   coordinates: [number, number][];
   distanceKm: number;
   surface: string;
-  safetyScore: number;
+  safetyScore?: number;
 }
 
 export interface PlannedRoute {
