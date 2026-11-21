@@ -35,7 +35,11 @@ build/
 ### Variables de entorno locales ###
 .env
 .env.local
-!.env.example
+.env.example
+
+### Documentación y notas internas ###
+docs/
+historias-pendientes/
 
 ### Prototipos de diseño (Google Stitch) ###
 stitch_cicloruta_mvp_web/
