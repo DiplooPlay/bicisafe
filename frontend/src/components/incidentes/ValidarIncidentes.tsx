@@ -63,7 +63,7 @@ export const ValidarIncidentes: React.FC<ValidarIncidentesProps> = ({
           </div>
           <div className="flex items-center justify-between text-[11px] text-outline">
             <span>+2 reporte</span>
-            <span className="text-error">-3 falso</span>
+            <span className="text-error">-5 falso</span>
           </div>
         </div>
       </div>
