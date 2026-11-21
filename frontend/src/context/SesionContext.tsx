@@ -25,6 +25,8 @@ const CLAVE_TOKEN = 'bicisafe.token';
 const CLAVE_USUARIO = 'bicisafe.usuario';
 
 interface EstadoSesion {
+  /** JWT token, or null when visitor. */
+  token: string | null;
   /** Session owner, or null when the user is browsing as a visitor. */
   usuario: UsuarioSesion | null;
   /** True once the persisted token has been checked against the API. */
@@ -42,6 +44,7 @@ interface EstadoSesion {
 const ContextoSesion = createContext<EstadoSesion | null>(null);
 
 export const ProveedorSesion: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem(CLAVE_TOKEN));
   const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
   const [inicializado, setInicializado] = useState(false);
   const [cargando, setCargando] = useState(false);
@@ -93,6 +96,7 @@ export const ProveedorSesion: React.FC<{ children: React.ReactNode }> = ({ child
       // Store the session first: after this point the user is authenticated.
       localStorage.setItem(CLAVE_TOKEN, respuesta.token);
       localStorage.setItem(CLAVE_USUARIO, JSON.stringify(respuesta.usuario));
+      setToken(respuesta.token);
       setUsuario(respuesta.usuario);
       return respuesta.usuario;
     } finally {
@@ -116,12 +120,14 @@ export const ProveedorSesion: React.FC<{ children: React.ReactNode }> = ({ child
     }
     localStorage.removeItem(CLAVE_TOKEN);
     localStorage.removeItem(CLAVE_USUARIO);
+    setToken(null);
     setUsuario(null);
   }, []);
 
   return (
     <ContextoSesion.Provider
       value={{
+        token,
         usuario,
         inicializado,
         cargando,
@@ -137,11 +143,23 @@ export const ProveedorSesion: React.FC<{ children: React.ReactNode }> = ({ child
   );
 };
 
+const ESTADO_POR_DEFECTO: EstadoSesion = {
+  token: null,
+  usuario: null,
+  inicializado: true,
+  cargando: false,
+  restaurando: false,
+  registrar: async () => ({ mensaje: '' }),
+  iniciarSesion: async () => ({ id: '', correo: '', nombre: '', rol: 'CICLISTA', estado: 'ACTIVO' }),
+  verificarCorreoConfirmacion: async () => ({ mensaje: '' }),
+  cerrarSesion: () => {},
+};
+
 /** React hook exposing the session state to components (single source of truth). */
 export function useSesion(): EstadoSesion {
   const contexto = useContext(ContextoSesion);
   if (!contexto) {
-    throw new Error('useSesion debe usarse dentro de ProveedorSesion.');
+    return ESTADO_POR_DEFECTO;
   }
   return contexto;
 }
