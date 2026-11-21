@@ -15,9 +15,21 @@ public interface IncidenteService {
 
     List<Incidente> listarTodos();
 
+    List<Incidente> listarPorUsuario(UUID usuarioId);
+
+    long contarPorUsuario(UUID usuarioId);
+
     Incidente reportarIncidente(IncidenteRequest solicitud, String nombreAutor);
+
+    Incidente reportarIncidente(IncidenteRequest solicitud, String nombreAutor, UUID usuarioId);
 
     Incidente confirmarIncidente(UUID id);
 
     Incidente resolverIncidente(UUID id);
+
+    Incidente denunciarIncidente(UUID id, UUID usuarioId, String motivo, String comentario);
+
+    void expirarIncidentesVencidos();
+
+    List<Incidente> listarIncidentesCercanosARuta(List<double[]> puntos, double radioMetros);
 }

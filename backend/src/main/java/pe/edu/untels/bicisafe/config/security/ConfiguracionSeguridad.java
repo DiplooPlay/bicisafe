@@ -31,7 +31,6 @@ public class ConfiguracionSeguridad {
     private static final String[] RUTAS_PUBLICAS = {
             "/api/auth/**",
             "/api/lugares/**",
-            "/api/rutas/**",
             "/actuator/health",
             "/v3/api-docs/**",
             "/swagger-ui/**",
@@ -64,7 +63,10 @@ public class ConfiguracionSeguridad {
                 .cors(cors -> {}) // Uses the CorsConfigurationSource bean from config/web.
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/rutas/guardadas", "/api/rutas/guardadas/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/rutas").permitAll()
                         .requestMatchers(RUTAS_PUBLICAS).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/incidentes/en-ruta").permitAll()
                         .requestMatchers(HttpMethod.GET, LECTURA_PUBLICA_INCIDENTES).permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(excepciones -> excepciones
