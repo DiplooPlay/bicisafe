@@ -17,6 +17,11 @@ export interface PuntosRuta {
   lngDestino: number;
 }
 
+export interface PuntoElevacion {
+  distanciaKm: number;
+  elevacionMetros: number;
+}
+
 /**
  * Bike route returned by the API.
  * `puntos` follows the Leaflet convention: [lat, lng] pairs ordered origin → destination.
@@ -25,4 +30,25 @@ export interface RutaPlanificada {
   distanciaKm: number;
   duracionMin: number;
   puntos: [number, number][];
+  elevacionGanadaMetros?: number;
+  elevacionPerdidaMetros?: number;
+  perfilElevacion?: PuntoElevacion[];
+  origenNombre?: string;
+  destinoNombre?: string;
+}
+
+/** Saved frequent route (HU-16). */
+export interface RutaGuardada {
+  id: string;
+  nombre: string;
+  origenNombre?: string;
+  destinoNombre?: string;
+  latOrigen: number;
+  lngOrigen: number;
+  latDestino: number;
+  lngDestino: number;
+  distanciaKm: number;
+  duracionMin: number;
+  puntos: [number, number][];
+  fechaCreacion?: string;
 }
