@@ -39,4 +39,19 @@ public interface ServicioRegistro {
      * @throws pe.edu.untels.bicisafe.compartido.excepcion.RecursoNoEncontradoExcepcion if missing
      */
     RespuestaUsuario obtenerPorId(java.util.UUID id);
+
+    /**
+     * Deletes the cyclist account and associated private data (RNF-10).
+     *
+     * @param id cyclist id
+     */
+    void eliminarCuenta(java.util.UUID id);
+
+    /**
+     * Updates the cyclist community reputation score (HU-04).
+     *
+     * @param usuarioId cyclist id
+     * @param puntos points to add (positive) or subtract (negative)
+     */
+    void sumarReputacion(java.util.UUID usuarioId, int puntos);
 }
