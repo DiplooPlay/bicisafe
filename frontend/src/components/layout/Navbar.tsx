@@ -33,7 +33,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onSelectTab, usuario
                   : 'text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface'
               }`}
             >
-              Mapa e Incidentes
+              Mapa
             </button>
             <button
               onClick={() => onSelectTab('validar')}
@@ -43,7 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onSelectTab, usuario
                   : 'text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface'
               }`}
             >
-              <span>Validación Comunitaria</span>
+              <span>Validar</span>
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
             </button>
           </nav>
@@ -56,18 +56,28 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onSelectTab, usuario
             className="hidden sm:inline-flex items-center justify-center h-10 px-4 bg-primary text-on-primary font-label-md text-xs sm:text-sm rounded-full shadow-sm hover:bg-primary-container active:scale-95 transition-all gap-1.5 cursor-pointer"
           >
             <span className="material-symbols-outlined text-[18px]">add_alert</span>
-            <span>Reportar Incidencia</span>
+            <span>Reportar</span>
           </button>
 
           {emailAMostrar ? (
             <div className="flex items-center gap-2">
-              <span className="hidden lg:inline font-body-sm text-xs text-on-surface-variant font-medium max-w-[180px] truncate">
-                {usuario?.nombre ?? emailAMostrar}
-              </span>
+              <button
+                type="button"
+                onClick={() => onSelectTab('perfil')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
+                  currentTab === 'perfil'
+                    ? 'bg-primary text-on-primary'
+                    : 'bg-surface-container hover:bg-surface-container-high text-on-surface'
+                }`}
+                title="Ver mi perfil"
+              >
+                <span className="material-symbols-outlined text-[16px]">account_circle</span>
+                <span className="hidden sm:inline max-w-[120px] truncate">{usuario?.nombre ?? emailAMostrar}</span>
+              </button>
               <button
                 onClick={onLogout}
                 title="Cerrar sesión"
-                className="w-9 h-9 rounded-full bg-surface-container hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant transition-colors"
+                className="w-9 h-9 rounded-full bg-surface-container hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant transition-colors cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[20px]">logout</span>
               </button>
@@ -82,7 +92,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onSelectTab, usuario
               }`}
             >
               <span className="material-symbols-outlined text-[16px]">lock</span>
-              <span>Iniciar Sesión</span>
+              <span>Iniciar sesión</span>
             </button>
           )}
         </div>

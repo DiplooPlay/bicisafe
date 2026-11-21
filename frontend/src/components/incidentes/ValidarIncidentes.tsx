@@ -7,13 +7,15 @@ interface ValidarIncidentesProps {
   onConfirmIncident: (id: string) => void;
   onRejectIncident: (id: string) => void;
   reputationScore?: number;
+  votedIncidentIds?: Record<string, 'CONFIRM' | 'RESOLVE'>;
 }
 
 export const ValidarIncidentes: React.FC<ValidarIncidentesProps> = ({
   incidents,
   onConfirmIncident,
   onRejectIncident,
-  reputationScore = 15
+  reputationScore = 15,
+  votedIncidentIds = {}
 }) => {
   const [activeTab, setActiveTab] = useState<IncidentStatus | 'ALL'>('PENDING');
   const [incidenteParaDenunciar, setIncidenteParaDenunciar] = useState<Incident | null>(null);
@@ -49,12 +51,12 @@ export const ValidarIncidentes: React.FC<ValidarIncidentesProps> = ({
           </div>
           <div className="flex items-baseline gap-2">
             <span className="font-metric-val text-2xl font-bold text-primary">{reputationScore}</span>
-            <span className="text-xs text-on-surface-variant">/ 100 pts</span>
+            <span className="text-xs text-on-surface-variant">/ 20 pts</span>
           </div>
           <div className="w-full bg-surface-container rounded-full h-1.5 my-2 overflow-hidden">
             <div
               className="bg-primary h-full rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(100, Math.max(0, reputationScore))}%` }}
+              style={{ width: `${Math.min(100, Math.max(0, (reputationScore / 20) * 100))}%` }}
             ></div>
           </div>
           <div className="flex items-center justify-between text-[11px] text-outline">
@@ -202,21 +204,30 @@ export const ValidarIncidentes: React.FC<ValidarIncidentesProps> = ({
                 {/* Actions (User Story 6 & 7) */}
                 {item.status !== 'RESOLVED' && (
                   <div className="flex items-center gap-2 pt-1">
-                    <button
-                      onClick={() => onConfirmIncident(item.id)}
-                      className="flex-1 h-9 px-3 rounded-full bg-primary hover:bg-primary-container text-on-primary text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all cursor-pointer"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">thumb_up</span>
-                      <span>Confirmar</span>
-                    </button>
+                    {votedIncidentIds[item.id] ? (
+                      <div className="flex-1 h-9 px-3 rounded-full bg-surface-container text-outline text-xs font-semibold flex items-center justify-center gap-1.5">
+                        <span className="material-symbols-outlined text-[16px]">check</span>
+                        <span>Votado ({votedIncidentIds[item.id] === 'CONFIRM' ? 'Confirmado' : 'Resuelto'})</span>
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => onConfirmIncident(item.id)}
+                          className="flex-1 h-9 px-3 rounded-full bg-primary hover:bg-primary-container text-on-primary text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">thumb_up</span>
+                          <span>Confirmar</span>
+                        </button>
 
-                    <button
-                      onClick={() => onRejectIncident(item.id)}
-                      className="flex-1 h-9 px-3 rounded-full bg-surface-container hover:bg-error-container hover:text-on-error-container text-on-surface text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                      <span>Ya no existe</span>
-                    </button>
+                        <button
+                          onClick={() => onRejectIncident(item.id)}
+                          className="flex-1 h-9 px-3 rounded-full bg-surface-container hover:bg-error-container hover:text-on-error-container text-on-surface text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                          <span>Ya no existe</span>
+                        </button>
+                      </>
+                    )}
 
                     <button
                       type="button"

@@ -8,6 +8,9 @@ import ValidarIncidentes from './components/incidentes/ValidarIncidentes';
 import Login from './pages/Login';
 import Registro from './pages/Registro';
 import VerificarCorreo from './pages/VerificarCorreo';
+import RecuperarPassword from './pages/RecuperarPassword';
+import RestablecerPassword from './pages/RestablecerPassword';
+import Perfil from './pages/Perfil';
 import {
   fetchIncidentesActivos,
   fetchTodosIncidentes,
@@ -21,10 +24,11 @@ import { ProveedorSesion, useSesion } from './context/SesionContext';
 import { Incident } from './types';
 import { RutaPlanificada } from './types/rutas';
 
-type Vista = 'mapa' | 'validar' | 'reportar' | 'login' | 'registro' | 'verificar';
+type Vista = 'mapa' | 'validar' | 'reportar' | 'login' | 'registro' | 'verificar' | 'recuperar' | 'restablecer' | 'perfil';
 
 interface ContenidoAppProps {
   tokenVerificacion: string | null;
+  tokenRestablecer: string | null;
 }
 
 /**
@@ -32,18 +36,41 @@ interface ContenidoAppProps {
  * cyclist reports or validates). E2/E3: real route planning and incident
  * persistence through the services, both resilient to a disconnected backend.
  */
-const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion }) => {
-  const { usuario, cerrarSesion } = useSesion();
-  const [vista, setVista] = useState<Vista>(tokenVerificacion ? 'verificar' : 'mapa');
+const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion, tokenRestablecer }) => {
+  const { token, usuario, cerrarSesion } = useSesion();
+  const [vista, setVista] = useState<Vista>(
+    tokenRestablecer ? 'restablecer' : (tokenVerificacion ? 'verificar' : 'mapa')
+  );
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [cycleways] = useState(CYCLEWAYS_LIMA);
   const [plannedRoute, setPlannedRoute] = useState<RutaPlanificada | null>(null);
+  const [routeIncidents, setRouteIncidents] = useState<Incident[] | null>(null);
   const [routingError, setRoutingError] = useState<string | null>(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isPickingLocation, setIsPickingLocation] = useState(false);
   const [pickedCoords, setPickedCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [reputationScore, setReputationScore] = useState(16);
+  const [reputationScore, setReputationScore] = useState(usuario?.reputacion ?? 15);
   const [notification, setNotification] = useState<string | null>(null);
+  const [votedIncidentIds, setVotedIncidentIds] = useState<Record<string, 'CONFIRM' | 'RESOLVE'>>(() => {
+    try {
+      const guardados = localStorage.getItem('bicisafe_votos');
+      return guardados ? JSON.parse(guardados) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const registrarVotoLocal = (id: string, tipo: 'CONFIRM' | 'RESOLVE') => {
+    setVotedIncidentIds(prev => {
+      const nuevo = { ...prev, [id]: tipo };
+      try {
+        localStorage.setItem('bicisafe_votos', JSON.stringify(nuevo));
+      } catch {
+        // ignore
+      }
+      return nuevo;
+    });
+  };
 
   // Hook de Geolocalización con alta precisión (GPS / Triangulación satelital)
   const { coords: userCoords, accuracy, isHighAccuracy, obtenerUbicacion: handleGetLocation } = useGeolocalizacion();
@@ -54,6 +81,13 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion }) => {
       setNotification(null);
     }, 4000);
   };
+
+  // Sincronizar reputación con la sesión activa
+  useEffect(() => {
+    if (usuario?.reputacion !== undefined) {
+      setReputationScore(usuario.reputacion);
+    }
+  }, [usuario]);
 
   // Carga inicial de incidentes desde el servicio
   const cargarIncidentes = useCallback(async () => {
@@ -74,55 +108,72 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion }) => {
 
   // HU3: Confirmar incidente (+1 voto / consenso)
   const handleConfirmIncident = async (id: string) => {
-    // Actualización optimista inmediata en UI
-    setIncidents(prev =>
-      prev.map(item => {
-        if (item.id === id) {
-          const newVotes = item.votesConfirm + 1;
-          const isNowConfirmed = newVotes >= item.requiredVotes;
-          return {
-            ...item,
-            votesConfirm: newVotes,
-            status: isNowConfirmed ? 'CONFIRMED' : item.status
-          };
-        }
-        return item;
-      })
-    );
-    setReputationScore(r => Math.min(20, r + 2));
-    showNotification('✅ Incidente confirmado (+2 pts de confianza comunitaria).');
-
-    // Persistir en backend
-    await confirmarIncidenteApi(id);
+    if (votedIncidentIds[id]) {
+      showNotification('Ya has votado en este reporte.');
+      return;
+    }
+    try {
+      await confirmarIncidenteApi(id, token);
+      registrarVotoLocal(id, 'CONFIRM');
+      setIncidents(prev =>
+        prev.map(item => {
+          if (item.id === id) {
+            const newVotes = item.votesConfirm + 1;
+            const isNowConfirmed = newVotes >= item.requiredVotes;
+            return {
+              ...item,
+              votesConfirm: newVotes,
+              status: isNowConfirmed ? 'CONFIRMED' : item.status
+            };
+          }
+          return item;
+        })
+      );
+      setReputationScore(r => Math.min(20, r + 1));
+      showNotification('Incidente confirmado');
+    } catch (err: any) {
+      showNotification(err.message || 'Error al confirmar');
+    }
   };
 
   // HU4: Marcar incidente como resuelto / ya no existe
   const handleRejectIncident = async (id: string) => {
-    // Actualización optimista inmediata en UI (retirar del mapa activo)
-    setIncidents(prev =>
-      prev.map(item => {
-        if (item.id === id) {
-          return {
-            ...item,
-            status: 'RESOLVED',
-            votesReject: item.votesReject + 1
-          };
-        }
-        return item;
-      })
-    );
-    showNotification('🗑️ Incidente marcado como resuelto. Retirado del mapa de alertas activas.');
-
-    // Persistir en backend
-    await resolverIncidenteApi(id);
+    if (votedIncidentIds[id]) {
+      showNotification('Ya has votado en este reporte.');
+      return;
+    }
+    try {
+      await resolverIncidenteApi(id, token);
+      registrarVotoLocal(id, 'RESOLVE');
+      setIncidents(prev =>
+        prev.map(item => {
+          if (item.id === id) {
+            return {
+              ...item,
+              status: 'RESOLVED',
+              votesReject: item.votesReject + 1
+            };
+          }
+          return item;
+        })
+      );
+      showNotification('Incidente resuelto');
+    } catch (err: any) {
+      showNotification(err.message || 'Error al resolver');
+    }
   };
 
   // HU2: Reportar nuevo incidente
   const handleNewReport = async (newReportData: Omit<Incident, 'id' | 'createdAt'>) => {
-    const reportGuardado = await reportarIncidenteApi(newReportData);
-    setIncidents(prev => [reportGuardado, ...prev]);
-    setReputationScore(r => Math.min(20, r + 2));
-    showNotification('📢 ¡Incidente publicado! La comunidad ha sido alertada en el mapa.');
+    try {
+      const reportGuardado = await reportarIncidenteApi(newReportData, token);
+      setIncidents(prev => [reportGuardado, ...prev]);
+      registrarVotoLocal(reportGuardado.id, 'CONFIRM');
+      setReputationScore(r => Math.min(20, r + 2));
+      showNotification('Incidente reportado');
+    } catch (err: any) {
+      showNotification(err.message || 'Error al reportar');
+    }
   };
 
   const handleSelectMapLocation = (lat: number, lng: number) => {
@@ -198,6 +249,7 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion }) => {
               incidents={incidents}
               cycleways={cycleways}
               plannedRoute={plannedRoute}
+              routeIncidents={routeIncidents}
               routingError={routingError}
               userCoords={userCoords}
               accuracy={accuracy}
@@ -207,6 +259,7 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion }) => {
               onSelectMapLocation={handleSelectMapLocation}
               onRecenterGPS={handleGetLocation}
               isPickingLocation={isPickingLocation}
+              votedIncidentIds={votedIncidentIds}
             />
 
             {/* Planificador de Ruta (Desktop) */}
@@ -216,6 +269,7 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion }) => {
                 onRoutingError={setRoutingError}
                 userCoords={userCoords}
                 onUseCurrentLocation={handleGetLocation}
+                onFilterIncidentsOnRoute={setRouteIncidents}
               />
             </div>
 
@@ -226,6 +280,7 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion }) => {
                 onRoutingError={setRoutingError}
                 userCoords={userCoords}
                 onUseCurrentLocation={handleGetLocation}
+                onFilterIncidentsOnRoute={setRouteIncidents}
               />
             </div>
 
@@ -239,6 +294,7 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion }) => {
             onConfirmIncident={handleConfirmIncident}
             onRejectIncident={handleRejectIncident}
             reputationScore={reputationScore}
+            votedIncidentIds={votedIncidentIds}
           />
         )}
 
@@ -250,6 +306,35 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion }) => {
               showNotification(`¡Bienvenido de vuelta, ${correo}!`);
             }}
             onNavigateToRegister={() => setVista('registro')}
+            onNavigateToRecover={() => setVista('recuperar')}
+          />
+        )}
+
+        {/* TAB: RECUPERAR CONTRASEÑA (HU-03) */}
+        {vista === 'recuperar' && (
+          <RecuperarPassword
+            onVolverALogin={() => setVista('login')}
+          />
+        )}
+
+        {/* TAB: RESTABLECER CONTRASEÑA (HU-03) */}
+        {vista === 'restablecer' && (
+          <RestablecerPassword
+            token={tokenRestablecer || ''}
+            onSuccess={() => {
+              setVista('login');
+              showNotification('¡Contraseña actualizada! Ya puedes iniciar sesión.');
+            }}
+            onVolverALogin={() => setVista('login')}
+          />
+        )}
+
+        {/* TAB: PERFIL Y REPUTACIÓN (HU-04, RNF-10) */}
+        {vista === 'perfil' && usuario && (
+          <Perfil
+            onVolverAlMapa={() => setVista('mapa')}
+            onLogout={manejarLogout}
+            showNotification={showNotification}
           />
         )}
 
@@ -295,25 +380,28 @@ const ContenidoApp: React.FC<ContenidoAppProps> = ({ tokenVerificacion }) => {
           } else if (tab === 'validar') {
             abrirValidarOCuenta();
           } else if (tab === 'login' && usuario) {
-            showNotification('Ya tienes sesión activa. Usa el botón de salir en la barra superior.');
+            setVista('perfil');
           } else {
             setVista(tab as Vista);
           }
         }}
         pendingCount={incidents.filter(i => i.status === 'PENDING').length}
+        isLoggedIn={Boolean(usuario)}
       />
 
     </div>
   );
 };
 
-/** Reads ?token=... from the verification email link before mounting the app shell. */
+/** Reads ?token=... or ?resetToken=... from email links before mounting the app shell. */
 export const App: React.FC = () => {
-  const tokenVerificacion = new URLSearchParams(window.location.search).get('token');
+  const searchParams = new URLSearchParams(window.location.search);
+  const tokenVerificacion = searchParams.get('token');
+  const tokenRestablecer = searchParams.get('resetToken');
 
   return (
     <ProveedorSesion>
-      <ContenidoApp tokenVerificacion={tokenVerificacion} />
+      <ContenidoApp tokenVerificacion={tokenVerificacion} tokenRestablecer={tokenRestablecer} />
     </ProveedorSesion>
   );
 };

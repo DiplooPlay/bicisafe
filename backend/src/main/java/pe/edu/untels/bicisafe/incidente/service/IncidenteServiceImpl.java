@@ -15,13 +15,16 @@ import pe.edu.untels.bicisafe.auth.service.ServicioCorreo;
 import pe.edu.untels.bicisafe.auth.service.ServicioRegistro;
 import pe.edu.untels.bicisafe.compartido.excepcion.EntradaInvalidaExcepcion;
 import pe.edu.untels.bicisafe.compartido.excepcion.RecursoNoEncontradoExcepcion;
+import pe.edu.untels.bicisafe.compartido.excepcion.ValorDuplicadoExcepcion;
 import pe.edu.untels.bicisafe.incidente.domain.CategoriaIncidente;
 import pe.edu.untels.bicisafe.incidente.domain.EstadoIncidente;
 import pe.edu.untels.bicisafe.incidente.domain.Incidente;
 import pe.edu.untels.bicisafe.incidente.domain.IncidenteDenuncia;
+import pe.edu.untels.bicisafe.incidente.domain.IncidenteVoto;
 import pe.edu.untels.bicisafe.incidente.dto.IncidenteRequest;
 import pe.edu.untels.bicisafe.incidente.repository.IncidenteDenunciaRepository;
 import pe.edu.untels.bicisafe.incidente.repository.IncidenteRepository;
+import pe.edu.untels.bicisafe.incidente.repository.IncidenteVotoRepository;
 import pe.edu.untels.bicisafe.ruta.dto.UsuarioRutaAfectada;
 import pe.edu.untels.bicisafe.ruta.service.ServicioRutaGuardada;
 import pe.edu.untels.bicisafe.ruta.service.ServicioRutaGuardadaImpl;
@@ -37,6 +40,7 @@ public class IncidenteServiceImpl implements IncidenteService {
 
     private final IncidenteRepository incidenteRepository;
     private final IncidenteDenunciaRepository denunciaRepository;
+    private final IncidenteVotoRepository incidenteVotoRepository;
     private final ServicioRegistro servicioRegistro;
     private final ServicioCorreo servicioCorreo;
     private final ServicioRutaGuardada servicioRutaGuardada;
@@ -44,11 +48,13 @@ public class IncidenteServiceImpl implements IncidenteService {
     public IncidenteServiceImpl(
             IncidenteRepository incidenteRepository,
             IncidenteDenunciaRepository denunciaRepository,
+            IncidenteVotoRepository incidenteVotoRepository,
             ServicioRegistro servicioRegistro,
             ServicioCorreo servicioCorreo,
             ServicioRutaGuardada servicioRutaGuardada) {
         this.incidenteRepository = incidenteRepository;
         this.denunciaRepository = denunciaRepository;
+        this.incidenteVotoRepository = incidenteVotoRepository;
         this.servicioRegistro = servicioRegistro;
         this.servicioCorreo = servicioCorreo;
         this.servicioRutaGuardada = servicioRutaGuardada;
@@ -121,6 +127,15 @@ public class IncidenteServiceImpl implements IncidenteService {
 
         if (usuarioId != null) {
             servicioRegistro.sumarReputacion(usuarioId, 2);
+            IncidenteVoto votoInicial = new IncidenteVoto(
+                    UUID.randomUUID(),
+                    guardado.getId(),
+                    usuarioId,
+                    usuarioId.toString(),
+                    "CONFIRMAR",
+                    Instant.now()
+            );
+            incidenteVotoRepository.save(votoInicial);
         }
 
         return guardado;
@@ -128,8 +143,28 @@ public class IncidenteServiceImpl implements IncidenteService {
 
     @Override
     public Incidente confirmarIncidente(UUID id) {
+        return confirmarIncidente(id, null);
+    }
+
+    @Override
+    public Incidente confirmarIncidente(UUID id, UUID usuarioId) {
         Incidente entidad = incidenteRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoExcepcion("id", "Incidente no encontrado con id: " + id));
+
+        if (usuarioId != null) {
+            if (incidenteVotoRepository.existsByIncidenteIdAndUsuarioId(id, usuarioId)) {
+                throw new ValorDuplicadoExcepcion("usuarioId", "Ya has votado en este reporte.");
+            }
+            IncidenteVoto voto = new IncidenteVoto(
+                    UUID.randomUUID(),
+                    id,
+                    usuarioId,
+                    usuarioId.toString(),
+                    "CONFIRMAR",
+                    Instant.now()
+            );
+            incidenteVotoRepository.save(voto);
+        }
 
         boolean estabaConfirmado = entidad.getEstado() == EstadoIncidente.CONFIRMADO;
         entidad.registrarConfirmacion();
@@ -165,8 +200,28 @@ public class IncidenteServiceImpl implements IncidenteService {
 
     @Override
     public Incidente resolverIncidente(UUID id) {
+        return resolverIncidente(id, null);
+    }
+
+    @Override
+    public Incidente resolverIncidente(UUID id, UUID usuarioId) {
         Incidente entidad = incidenteRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoExcepcion("id", "Incidente no encontrado con id: " + id));
+
+        if (usuarioId != null) {
+            if (incidenteVotoRepository.existsByIncidenteIdAndUsuarioId(id, usuarioId)) {
+                throw new ValorDuplicadoExcepcion("usuarioId", "Ya has votado en este reporte.");
+            }
+            IncidenteVoto voto = new IncidenteVoto(
+                    UUID.randomUUID(),
+                    id,
+                    usuarioId,
+                    usuarioId.toString(),
+                    "RESOLVER",
+                    Instant.now()
+            );
+            incidenteVotoRepository.save(voto);
+        }
 
         entidad.marcarComoResuelto();
         return incidenteRepository.save(entidad);

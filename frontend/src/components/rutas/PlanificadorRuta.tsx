@@ -294,7 +294,7 @@ export const PlanificadorRuta: React.FC<PlanificadorRutaProps> = ({
                 className="font-label-sm text-[11px] text-primary hover:underline flex items-center gap-0.5 cursor-pointer font-medium"
               >
                 <span className="material-symbols-outlined text-[14px]">my_location</span>
-                <span>Usar mi GPS</span>
+                <span>GPS</span>
               </button>
             )}
           </div>
@@ -323,7 +323,7 @@ export const PlanificadorRuta: React.FC<PlanificadorRutaProps> = ({
                   buscarSugerencias(campo, entrada.texto);
                 }
               }}
-              placeholder={esOrigen ? 'Ej. Miraflores, Parque Kennedy' : 'Ej. UNTELS, Ovalo Higuereta'}
+              placeholder={esOrigen ? 'Miraflores' : 'UNTELS'}
               className={inputClass}
             />
             {isSearching && sugerencias.campo === campo && (
@@ -363,11 +363,8 @@ export const PlanificadorRuta: React.FC<PlanificadorRutaProps> = ({
           </div>
           <div>
             <h2 className="font-headline-sm text-sm font-bold text-on-surface">
-              Planificar Ruta
+              Rutas
             </h2>
-            <p className="font-body-sm text-[10px] text-on-surface-variant">
-              Ciclovías de Lima
-            </p>
           </div>
         </div>
 
@@ -425,7 +422,7 @@ export const PlanificadorRuta: React.FC<PlanificadorRutaProps> = ({
                 ) : (
                   <>
                     <span className="material-symbols-outlined text-[18px]">directions_bike</span>
-                    <span>Calcular Ruta</span>
+                    <span>Calcular</span>
                   </>
                 )}
               </button>

@@ -17,13 +17,13 @@ describe('PlanificadorRuta component', () => {
       />
     );
 
-    const gpsButton = screen.getByRole('button', { name: /Usar mi GPS/i });
+    const gpsButton = screen.getByRole('button', { name: /GPS/i });
     expect(gpsButton).toBeInTheDocument();
 
     fireEvent.click(gpsButton);
     expect(handleUseCurrentLocation).toHaveBeenCalled();
 
-    const destinoInput = screen.getByPlaceholderText(/Ovalo Higuereta/i);
+    const destinoInput = screen.getByPlaceholderText(/UNTELS/i);
     expect(destinoInput).toBeInTheDocument();
 
     fireEvent.change(destinoInput, { target: { value: 'Av. Arequipa' } });

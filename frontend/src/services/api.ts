@@ -26,7 +26,7 @@ export class ApiError extends Error {
 
 interface OpcionesPeticion {
   path: string;
-  method?: 'GET' | 'POST';
+  method?: 'GET' | 'POST' | 'DELETE' | 'PUT';
   body?: unknown;
   token?: string | null;
   signal?: AbortSignal;

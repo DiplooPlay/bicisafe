@@ -4,9 +4,10 @@ interface BottomNavProps {
   currentTab: string;
   onSelectTab: (tab: string) => void;
   pendingCount?: number;
+  isLoggedIn?: boolean;
 }
 
-export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab, pendingCount = 2 }) => {
+export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab, pendingCount = 0, isLoggedIn = false }) => {
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface/90 backdrop-blur-xl border-t border-surface-container shadow-[0_-2px_12px_rgba(0,0,0,0.05)]">
       <div className="flex items-center justify-around h-16 px-space-xs">
@@ -53,13 +54,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab, p
 
         {/* Iniciar Sesión / Perfil */}
         <button
-          onClick={() => onSelectTab('login')}
+          onClick={() => onSelectTab(isLoggedIn ? 'perfil' : 'login')}
           className={`flex flex-col items-center justify-center gap-1 w-16 h-12 transition-colors cursor-pointer ${
-            currentTab === 'login' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'
+            currentTab === 'login' || currentTab === 'perfil' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'
           }`}
         >
           <span className="material-symbols-outlined text-[24px]">account_circle</span>
-          <span className="font-label-sm text-[11px]">Cuenta</span>
+          <span className="font-label-sm text-[11px]">{isLoggedIn ? 'Perfil' : 'Cuenta'}</span>
         </button>
 
       </div>

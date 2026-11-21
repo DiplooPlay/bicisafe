@@ -36,7 +36,6 @@ Cada archivo `e{epico}-{tema}.md` describe únicamente lo pendiente de esa histo
 
 | Historia | Archivo | Resumen pendiente |
 | --- | --- | --- |
-| E1 Registro con verificación por correo | `e1-registro-ciclista.md` | Envío real de correo verificado con Gmail SMTP (2026-10-17, ver `014`); restablecimiento de contraseña documentado con lo que se intentó. |
 | E2 GPS como origen | `e2-gps-origen.md` | Alta precisión satelital y pruebas con Vitest resueltas (2026-10-17, ver `015` y `017`); verificación física en móvil documentada con lo que se intentó. |
 | E2 Planificación de ruta | `e2-planificacion-ruta.md` | Ruta ORS de extremo a extremo verificada (2026-10-17, ver `014`); calidad de superficie / scoring documentado con lo que se intentó. |
 

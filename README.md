@@ -191,6 +191,14 @@ como referencia, pásalo con `envFile` de VS Code, o defínelo como variables de
 > `docker compose up -d`. Si usas PostgreSQL nativo, instala la extensión **PostGIS** (Stack
 > Builder) o habilítala en tu proveedor; la migración `V1` la requiere.
 
+## Reglas clave del proyecto
+
+Tres reglas obligatorias para desarrollo, diseño y comunicación:
+
+1. **Textos breves**: Palabras comunes. Frases de 1 a 3 palabras. Cero explicaciones largas.
+2. **Interfaz limpia**: Sin elementos innecesarios. Lo mínimo, pero bien hecho.
+3. **Respetar el tema**: Usar los colores oficiales de `tailwind.config.js` (verde `#006948`, azul `#006398`, fondo `#f8f9ff`).
+
 ## Estándares de código
 
 Buscamos **código legible, simple, mantenible y bien documentado**. La regla de oro: que el próximo

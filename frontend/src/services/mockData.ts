@@ -79,7 +79,6 @@ export const CYCLEWAYS_LIMA: CycleWay[] = [
     name: "Ciclov\u00eda Av. Arequipa (Eje Central)",
     type: "segregada",
     surface: "Pavimento Asf\u00e1ltico Se\u00f1alizado",
-    safetyScore: 98,
     distanceKm: 6.8,
     coordinates: [
       [-12.065479, -77.03656],
@@ -281,7 +280,6 @@ export const CYCLEWAYS_LIMA: CycleWay[] = [
     name: "Ciclov\u00eda Av. Salaverry (Jes\u00fas Mar\u00eda - San Isidro)",
     type: "segregada",
     surface: "Concreto Pintado Antideslizante",
-    safetyScore: 95,
     distanceKm: 7.2,
     coordinates: [
       [-12.067308, -77.041612],
@@ -501,7 +499,6 @@ export const CYCLEWAYS_LIMA: CycleWay[] = [
     name: "Zona 30 Compartida Miraflores - Malec\u00f3n",
     type: "vias30",
     surface: "Calzada Asf\u00e1ltica Compartida 30 km/h",
-    safetyScore: 88,
     distanceKm: 3.6,
     coordinates: [
       [-12.120617, -77.038517],
@@ -640,7 +637,6 @@ export const CYCLEWAYS_LIMA: CycleWay[] = [
     name: "Ciclov\u00eda Av. Central - UNTELS (VES)",
     type: "segregada",
     surface: "Ciclov\u00eda Segregada Protegida",
-    safetyScore: 94,
     distanceKm: 6.9,
     coordinates: [
       [-12.193115, -76.965987],
@@ -815,7 +811,6 @@ export const CYCLEWAYS_LIMA: CycleWay[] = [
     name: "Ciclov\u00eda Av. Pastor Sevilla (VES)",
     type: "segregada",
     surface: "Calzada Segregada Exclusiva",
-    safetyScore: 91,
     distanceKm: 4.7,
     coordinates: [
       [-12.186368, -76.952759],

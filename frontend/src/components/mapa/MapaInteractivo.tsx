@@ -18,6 +18,7 @@ interface MapaInteractivoProps {
   onSelectMapLocation?: (lat: number, lng: number) => void;
   onRecenterGPS?: () => void;
   isPickingLocation?: boolean;
+  votedIncidentIds?: Record<string, 'CONFIRM' | 'RESOLVE'>;
 }
 
 // Custom DivIcons matching Stitch design
@@ -146,12 +147,12 @@ export const MapaInteractivo: React.FC<MapaInteractivoProps> = ({
   onRejectIncident,
   onSelectMapLocation,
   onRecenterGPS,
-  isPickingLocation
+  isPickingLocation,
+  votedIncidentIds = {}
 }) => {
-  const [filterCategory, setFilterCategory] = useState<string>('todo');
+  const [filterCategory, setFilterCategory] = useState<'todo' | 'ruta'>('todo');
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
-  const [mapMode, setMapMode] = useState<'cyclosm' | 'estandar'>('cyclosm');
 
   // Filter logic (HU-09, HU-15)
   const filteredIncidents = incidents.filter(inc => {
@@ -167,14 +168,12 @@ export const MapaInteractivo: React.FC<MapaInteractivoProps> = ({
       }
       return false;
     }
-    if (filterCategory === 'todo') return inc.status !== 'EXPIRED';
-    if (filterCategory === 'alertas') return inc.status !== 'RESOLVED' && inc.status !== 'EXPIRED';
-    return inc.category === filterCategory && inc.status !== 'EXPIRED';
+    return inc.status !== 'EXPIRED';
   });
 
-  const showSegregated = filterCategory === 'todo' || filterCategory === 'segregadas';
-  const showVias30 = filterCategory === 'todo' || filterCategory === 'vias30';
-  const showRoute = Boolean(plannedRoute && (filterCategory === 'todo' || filterCategory === 'ruta'));
+  const showSegregated = true;
+  const showVias30 = true;
+  const showRoute = Boolean(plannedRoute);
 
   const defaultCenter: [number, number] = [-12.1217, -77.0298]; // Lima - Miraflores
 
@@ -235,42 +234,6 @@ export const MapaInteractivo: React.FC<MapaInteractivoProps> = ({
           </button>
         )}
 
-        <button
-          onClick={() => setFilterCategory('segregadas')}
-          className={`shrink-0 h-8 px-3.5 rounded-full font-label-md text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer ${
-            filterCategory === 'segregadas'
-              ? 'bg-primary text-on-primary font-bold'
-              : 'bg-surface-container-lowest/95 backdrop-blur-md text-on-surface-variant hover:bg-surface-container-low'
-          }`}
-        >
-          <span className="w-2 h-2 rounded-full bg-primary"></span>
-          <span>Segregadas</span>
-        </button>
-
-        <button
-          onClick={() => setFilterCategory('vias30')}
-          className={`shrink-0 h-8 px-3.5 rounded-full font-label-md text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer ${
-            filterCategory === 'vias30'
-              ? 'bg-secondary text-on-secondary font-bold'
-              : 'bg-surface-container-lowest/95 backdrop-blur-md text-on-surface-variant hover:bg-surface-container-low'
-          }`}
-        >
-          <span className="w-2 h-2 rounded-full bg-secondary"></span>
-          <span>Vías 30</span>
-        </button>
-
-        <button
-          onClick={() => setFilterCategory('alertas')}
-          className={`shrink-0 h-8 px-3.5 rounded-full font-label-md text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer ${
-            filterCategory === 'alertas'
-              ? 'bg-error text-on-error font-bold'
-              : 'bg-surface-container-lowest/95 backdrop-blur-md text-on-surface-variant hover:bg-surface-container-low'
-          }`}
-        >
-          <span className="w-2 h-2 rounded-full bg-error"></span>
-          <span>Alertas ({incidents.filter(i => i.status !== 'RESOLVED').length})</span>
-        </button>
-
         {/* GPS Accuracy Indicator Badge */}
         {accuracy !== null && (
           <div className="ml-auto hidden sm:inline-flex items-center gap-1.5 px-3 py-1 bg-surface-container-lowest/95 backdrop-blur-md rounded-full shadow-sm text-[11px] font-semibold text-on-surface border border-outline-variant/30">
@@ -300,21 +263,6 @@ export const MapaInteractivo: React.FC<MapaInteractivoProps> = ({
           </button>
         </div>
 
-        {/* Toggle Modo Ciclovías (CyclOSM) / Mapa Estándar */}
-        <button
-          onClick={() => setMapMode((prev) => (prev === 'cyclosm' ? 'estandar' : 'cyclosm'))}
-          title={mapMode === 'cyclosm' ? 'Cambiar a Mapa Estándar' : 'Activar Mapa Ciclovías (CyclOSM)'}
-          className={`w-11 h-11 backdrop-blur-md rounded-2xl shadow-md border border-outline-variant/30 flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
-            mapMode === 'cyclosm'
-              ? 'bg-primary text-on-primary'
-              : 'bg-surface-container-lowest/95 text-on-surface hover:bg-surface-container'
-          }`}
-        >
-          <span className="material-symbols-outlined text-[22px]">
-            {mapMode === 'cyclosm' ? 'directions_bike' : 'map'}
-          </span>
-        </button>
-
         {onRecenterGPS && (
           <button
             onClick={onRecenterGPS}
@@ -338,21 +286,11 @@ export const MapaInteractivo: React.FC<MapaInteractivoProps> = ({
         ref={setMapInstance}
         className="w-full h-full"
       >
-        {mapMode === 'cyclosm' ? (
-          <TileLayer
-            key="cyclosm"
-            attribution='&copy; <a href="https://www.cyclosm.org">CyclOSM</a> | &copy; OpenStreetMap'
-            url="https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png"
-            maxZoom={18}
-          />
-        ) : (
-          <TileLayer
-            key="osm"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            maxZoom={19}
-          />
-        )}
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maxZoom={19}
+        />
 
         <RecenterController coords={userCoords} />
         <MapClickHandler onPick={onSelectMapLocation} active={isPickingLocation} />
@@ -561,27 +499,36 @@ export const MapaInteractivo: React.FC<MapaInteractivoProps> = ({
 
           {/* Actions: Confirmar o Desmentir / Resuelto */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                onConfirmIncident(selectedIncident.id);
-                setSelectedIncident(null);
-              }}
-              className="flex-1 h-9 bg-primary hover:bg-primary-container text-on-primary text-xs font-semibold rounded-full flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[16px]">thumb_up</span>
-              <span>Confirmar (+1)</span>
-            </button>
+            {votedIncidentIds[selectedIncident.id] ? (
+              <div className="flex-1 h-9 px-3 rounded-full bg-surface-container text-outline text-xs font-semibold flex items-center justify-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px]">check</span>
+                <span>Votado ({votedIncidentIds[selectedIncident.id] === 'CONFIRM' ? 'Confirmado' : 'Resuelto'})</span>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={() => {
+                    onConfirmIncident(selectedIncident.id);
+                    setSelectedIncident(null);
+                  }}
+                  className="flex-1 h-9 bg-primary hover:bg-primary-container text-on-primary text-xs font-semibold rounded-full flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px]">thumb_up</span>
+                  <span>Confirmar</span>
+                </button>
 
-            <button
-              onClick={() => {
-                onRejectIncident(selectedIncident.id);
-                setSelectedIncident(null);
-              }}
-              className="flex-1 h-9 bg-surface-container hover:bg-error-container hover:text-on-error-container text-on-surface text-xs font-semibold rounded-full flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[16px]">check_circle</span>
-              <span>Ya no existe / Resuelto</span>
-            </button>
+                <button
+                  onClick={() => {
+                    onRejectIncident(selectedIncident.id);
+                    setSelectedIncident(null);
+                  }}
+                  className="flex-1 h-9 bg-surface-container hover:bg-error-container hover:text-on-error-container text-on-surface text-xs font-semibold rounded-full flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                  <span>Ya no existe</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
