@@ -8,7 +8,7 @@ Plataforma web para ciclistas urbanos en Lima. Permite planificar rutas seguras 
 - **Node.js 18+** y npm
 - **PostgreSQL** con extensión **PostGIS**
 
-## Puesta en marcha
+## Ejecutar el proyecto
 
 ### 1. Base de datos
 
