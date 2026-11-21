@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { denunciarIncidenteApi } from '../../services/incidenteService';
+import { Incident } from '../../types';
 
 interface DenunciarIncidenteModalProps {
   isOpen: boolean;
   incidenteId: string | null;
   incidenteTitulo?: string;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (updated?: Incident) => void;
 }
 
 export const DenunciarIncidenteModal: React.FC<DenunciarIncidenteModalProps> = ({
@@ -28,8 +29,8 @@ export const DenunciarIncidenteModal: React.FC<DenunciarIncidenteModalProps> = (
     setError(null);
     setEnviando(true);
     try {
-      await denunciarIncidenteApi(incidenteId, motivo, comentario.trim() || undefined);
-      onSuccess();
+      const updated = await denunciarIncidenteApi(incidenteId, motivo, comentario.trim() || undefined);
+      onSuccess(updated);
       onClose();
     } catch (err: any) {
       setError(err?.message || 'Error al enviar reporte.');

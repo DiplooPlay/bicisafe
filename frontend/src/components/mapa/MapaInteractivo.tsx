@@ -156,8 +156,10 @@ export const MapaInteractivo: React.FC<MapaInteractivoProps> = ({
 
   // Filter logic (HU-09, HU-15)
   const filteredIncidents = incidents.filter(inc => {
+    if (inc.status === 'EXPIRED' || inc.status === 'RESOLVED' || inc.status === 'INVALID') {
+      return false;
+    }
     if (filterCategory === 'ruta') {
-      if (inc.status === 'EXPIRED') return false;
       if (routeIncidents) {
         return routeIncidents.some(r => r.id === inc.id);
       }
@@ -168,7 +170,7 @@ export const MapaInteractivo: React.FC<MapaInteractivoProps> = ({
       }
       return false;
     }
-    return inc.status !== 'EXPIRED';
+    return true;
   });
 
   const showSegregated = true;

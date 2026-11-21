@@ -8,6 +8,7 @@ interface ValidarIncidentesProps {
   onRejectIncident: (id: string) => void;
   reputationScore?: number;
   votedIncidentIds?: Record<string, 'CONFIRM' | 'RESOLVE'>;
+  onIncidentUpdated?: (updated: Incident) => void;
 }
 
 export const ValidarIncidentes: React.FC<ValidarIncidentesProps> = ({
@@ -15,7 +16,8 @@ export const ValidarIncidentes: React.FC<ValidarIncidentesProps> = ({
   onConfirmIncident,
   onRejectIncident,
   reputationScore = 15,
-  votedIncidentIds = {}
+  votedIncidentIds = {},
+  onIncidentUpdated
 }) => {
   const [activeTab, setActiveTab] = useState<IncidentStatus | 'ALL'>('PENDING');
   const [incidenteParaDenunciar, setIncidenteParaDenunciar] = useState<Incident | null>(null);
@@ -34,7 +36,7 @@ export const ValidarIncidentes: React.FC<ValidarIncidentesProps> = ({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-surface-container">
         <div>
           <h1 className="font-headline-lg text-2xl sm:text-3xl font-bold text-on-surface">
-            Validar incidentes
+            Incidencias
           </h1>
           <p className="text-xs sm:text-sm text-on-surface-variant mt-0.5">
             Consenso comunitario
@@ -83,6 +85,20 @@ export const ValidarIncidentes: React.FC<ValidarIncidentesProps> = ({
         </button>
 
         <button
+          onClick={() => setActiveTab('CONFIRMED')}
+          className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+            activeTab === 'CONFIRMED'
+              ? 'bg-primary text-on-primary shadow-sm'
+              : 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low'
+          }`}
+        >
+          <span>Confirmados</span>
+          <span className="px-1.5 py-0.2 bg-surface-container rounded-full text-[10px]">
+            {incidents.filter(i => i.status === 'CONFIRMED').length}
+          </span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('DISPUTED')}
           className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
             activeTab === 'DISPUTED'
@@ -97,16 +113,16 @@ export const ValidarIncidentes: React.FC<ValidarIncidentesProps> = ({
         </button>
 
         <button
-          onClick={() => setActiveTab('CONFIRMED')}
+          onClick={() => setActiveTab('INVALID')}
           className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-            activeTab === 'CONFIRMED'
-              ? 'bg-primary text-on-primary shadow-sm'
+            activeTab === 'INVALID'
+              ? 'bg-error text-on-error shadow-sm'
               : 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low'
           }`}
         >
-          <span>Confirmados</span>
-          <span className="px-1.5 py-0.2 bg-surface-container rounded-full text-[10px]">
-            {incidents.filter(i => i.status === 'CONFIRMED').length}
+          <span>Inválidos</span>
+          <span className="px-1.5 py-0.2 bg-error-container/40 rounded-full text-[10px]">
+            {incidents.filter(i => i.status === 'INVALID').length}
           </span>
         </button>
 
@@ -185,19 +201,23 @@ export const ValidarIncidentes: React.FC<ValidarIncidentesProps> = ({
                   <span className="text-primary font-semibold">Reputación: {item.authorReputation} pts</span>
                 </div>
 
-                {/* Consensus Progress Bar */}
-                <div className="p-3 bg-surface-container-low rounded-xl mb-3">
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="font-semibold text-on-surface">Consenso Requerido</span>
+                {/* Consensus Progress Bar & Telemetry */}
+                <div className="p-3 bg-surface-container-low rounded-xl mb-3 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-on-surface">Validaciones</span>
                     <span className="font-bold text-primary">
-                      {item.votesConfirm} / {item.requiredVotes} Confirmaciones
+                      {item.votesConfirm} / 3
                     </span>
                   </div>
-                  <div className="w-full bg-surface-container-highest rounded-full h-2 overflow-hidden">
+                  <div className="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
                     <div
                       className="bg-primary h-full transition-all duration-300"
-                      style={{ width: `${Math.min(100, (item.votesConfirm / item.requiredVotes) * 100)}%` }}
+                      style={{ width: `${Math.min(100, (item.votesConfirm / 3) * 100)}%` }}
                     ></div>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-outline pt-0.5">
+                    <span>Falso: <strong className="text-error">{item.reportsFake || 0}/3</strong></span>
+                    <span>Resuelto: <strong className="text-secondary">{item.votesReject || 0}/3</strong></span>
                   </div>
                 </div>
 
@@ -254,7 +274,10 @@ export const ValidarIncidentes: React.FC<ValidarIncidentesProps> = ({
         incidenteId={incidenteParaDenunciar?.id || null}
         incidenteTitulo={incidenteParaDenunciar?.title}
         onClose={() => setIsDenunciarOpen(false)}
-        onSuccess={() => {
+        onSuccess={(updated) => {
+          if (updated && onIncidentUpdated) {
+            onIncidentUpdated(updated);
+          }
           setDenunciaConfirmada(true);
           setTimeout(() => setDenunciaConfirmada(false), 3000);
         }}

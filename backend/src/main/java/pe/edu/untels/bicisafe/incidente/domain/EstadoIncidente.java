@@ -7,6 +7,7 @@ public enum EstadoIncidente {
     PENDIENTE,
     EN_DISPUTA,
     CONFIRMADO,
+    INVALIDO,
     RESUELTO,
     EXPIRADO
 }

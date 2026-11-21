@@ -18,6 +18,7 @@ describe('incidenteService', () => {
       { id: '2', estado: 'EN_DISPUTA', categoria: 'obras', titulo: 'Obras' },
       { id: '3', estado: 'CONFIRMADO', categoria: 'bloqueo', titulo: 'Bloqueo' },
       { id: '4', estado: 'EXPIRADO', categoria: 'otro', titulo: 'Expirado' },
+      { id: '5', estado: 'INVALIDO', categoria: 'otro', titulo: 'Invalido' },
     ];
 
     globalThis.fetch = vi.fn().mockResolvedValue({
@@ -27,11 +28,12 @@ describe('incidenteService', () => {
 
     const incidentes = await fetchIncidentesActivos();
 
-    expect(incidentes).toHaveLength(4);
+    expect(incidentes).toHaveLength(5);
     expect(incidentes[0].status).toBe('PENDING');
     expect(incidentes[1].status).toBe('DISPUTED');
     expect(incidentes[2].status).toBe('CONFIRMED');
     expect(incidentes[3].status).toBe('EXPIRED');
+    expect(incidentes[4].status).toBe('INVALID');
   });
 
   it('filtra incidentes cercanos a la ruta en modo fallback resiliente (HU-09)', async () => {
