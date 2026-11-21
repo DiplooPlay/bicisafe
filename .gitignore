@@ -35,7 +35,6 @@ build/
 ### Variables de entorno locales ###
 .env
 .env.local
-.env.example
 
 ### Documentación y notas internas ###
 docs/
